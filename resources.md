@@ -8,6 +8,7 @@
 ## Support-Vector Machines (SMVs)
 * [Explicación (inglés)](https://www.youtube.com/watch?v=N1vOgolbjSc)
 * [Otra explicación (inglés)](https://www.youtube.com/watch?v=eUfvyUEGMD8)
+* [Tutorial](http://cs229.stanford.edu/notes/cs229-notes3.pdf)
 
 ## Non-Maximum Suppresion (NMS)
 * [Tutorial](https://www.pyimagesearch.com/2014/11/17/non-maximum-suppression-object-detection-python/)
