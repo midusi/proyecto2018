@@ -73,7 +73,9 @@ def load_neg():
             img = skimage.io.imread(img_path)  # Cargo la imagen
             # generate_sub_samples(img, img_path)  # Genero nuevas muestras a partir de la imagen
             img = resize(img)  # Re escalo la imagen original
-            save_img(img, folder_neg_to, filename)  # Guardo la imagen en la carpeta de negativos
+            basename, extension = get_basename(filename)
+            filename_final = basename + '.png'
+            save_img(img, folder_neg_to, filename_final)  # Guardo la imagen en la carpeta de negativos
 
 
 def main():
