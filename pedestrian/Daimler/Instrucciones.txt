@@ -1,0 +1,8 @@
+1- Crear virtualenv -> python3 -m venv <cualquier path>/proyecto2018
+2- Activar dicho entornno <cualquier path>/proyecto2018/bin/activate
+3- Instalar dependencias -> pip install -r requisitos.txt
+4- Crear una carpeta donde se guardarán las imagenes negativas.
+5- Poner las rutas necesarias en la zona superior del código (desde donde se van a
+    leer las imagenes y a donde se van a guardar).
+6- Correr script -> python3 DaimlerLoader.py
+7- (opcional) Cambiar la variable 'final_size' si se quiere otro tamaño final para las imagenes.
