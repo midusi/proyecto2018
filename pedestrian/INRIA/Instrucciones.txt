@@ -1,0 +1,7 @@
+1- Crear virtualenv -> python3 -m venv <cualquier path>/proyecto2018
+2- Activar dicho entornno <cualquier path>/proyecto2018/bin/activate
+3- Instalar dependencias -> pip install -r requisitos.txt
+4- Crear dos carpetas, una donde se guardarán las imagenes positivas o otra las negativas.
+5- Poner ambas rutas y la carpeta root donde está el dataset en la zona superior del código.
+6- Correr script -> python3 INRIAlac.py
+7- (opcional) Cambiar la variable 'final_size' si se quiere otro tamaño final para las imagenes.
