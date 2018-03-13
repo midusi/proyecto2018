@@ -1,0 +1,11 @@
+numba
+numpy
+protobuf
+six
+matplotlib
+scikit-image
+scikit-learn
+h5py
+ipython
+jupyter
+https://pypi.python.org/packages/b5/3f/940329280d058ce0907c3d811341a4ff98bb1b1be10128d326db8204b8e3/sk_video-1.1.8-py2.py3-none-any.whl#md5=289496a37f5500c47481fe5a256bc81a
