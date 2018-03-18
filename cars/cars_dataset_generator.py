@@ -67,8 +67,20 @@ def load_neg():
         filename = get_filename(img_path)  # Genero el nombre que tendra la imagen guardada
         save_img(img, folder_neg_to, filename)  # Guardo la imagen en la carpeta de negativos
 
+def load_pos():
+    # Carga las imagenes positivas pero las guarda todas con el mismo tamanio
+
+    files = os.listdir(root_folder + "/positive") # Lista todos los archivos de ese directorio
+    for img_path in files:
+        img_path = img_path.rstrip('\n')
+        img = skimage.io.imread(root_folder + "/positive/" + img_path)  # Cargo la imagen
+        img = resize(img)  # Re escalo la imagen original
+        filename = get_filename(img_path)  # Genero el nombre que tendra la imagen guardada
+        save_img(img, folder_pos_to, filename)  # Guardo la imagen en la carpeta de positivos
+
 def main():
-    load_neg() # Cargo muestras negativas
+    #load_neg() # Cargo muestras negativas
+    load_pos() # Cargo muestras positivas
 
 if __name__ == '__main__':
     main()
