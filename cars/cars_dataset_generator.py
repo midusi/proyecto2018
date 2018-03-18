@@ -40,6 +40,7 @@ def generate_sub_samples(img, original_img_path):
     while y < height:
         x = 0
         while x < width:
+            try: # Puede ser que la subdivision de la imagen no sea siempre igual. Lo que sobra no lo uso
                 sub_img = img[y:y + block_heigth, x:x + block_width, :]  # Obtengo una subregion/subimagen
                 sub_img = resize(sub_img)
                 # Genero el nombre de la imagen a partir del nombre original
@@ -47,6 +48,8 @@ def generate_sub_samples(img, original_img_path):
                 save_img(sub_img, folder_neg_to, sub_img_filename)
                 x += block_width
                 i += 1
+            except:
+                break
         y += block_heigth
 
 
