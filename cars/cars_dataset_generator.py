@@ -2,6 +2,8 @@ import skimage.io
 import skimage.transform
 import matplotlib.pyplot as plt
 import re
+import os
+import numpy as np
 
 root_folder = 'DataSetAutos/'
 folder_pos_to = 'DataSetAutos/Resize/pos/'
@@ -52,9 +54,21 @@ def generate_sub_samples(img, original_img_path):
                 break
         y += block_heigth
 
+def load_neg():
+    """Se encarga de cargar todos los samples negativos"""
+
+    files = os.listdir(root_folder + "/negative") # Lista todos los archivos de ese directorio
+    for img_path in files:
+        img_path = img_path.rstrip('\n')
+        img = skimage.io.imread(root_folder + "/negative/" + img_path)  # Cargo la imagen
+        generate_sub_samples(img, img_path)  # Genero nuevas muestras a partir de la imagen
+        #print(img_path)
+        img = resize(img)  # Re escalo la imagen original
+        filename = get_filename(img_path)  # Genero el nombre que tendra la imagen guardada
+        save_img(img, folder_neg_to, filename)  # Guardo la imagen en la carpeta de negativos
 
 def main():
-    pass
+    load_neg() # Cargo muestras negativas
 
 if __name__ == '__main__':
     main()
