@@ -1,9 +1,15 @@
+# Este script se encarga de generar un data set de autos a partir de otro ya hecho.
+# En este caso, el nuevo dataset tendra las imagenes estandarizadas con cierto tamanio.
+# DATO: el data set origen era uno que no contenia Bounding Boxes.
+
 import skimage.io
 import skimage.transform
 import matplotlib.pyplot as plt
 import re
 import os
 import numpy as np
+
+# El dataset debe estar en el mismo directorio que cars_dataset_generator.py
 
 root_folder = 'DataSetAutos/'
 folder_pos_to = 'DataSetAutos/Resize/pos/'
@@ -31,10 +37,7 @@ def save_img(img, folder, img_filename):
 
 def generate_sub_samples(img, original_img_path):
     """A partir de la imagen pasada por parametro se generan sub imagenes"""
-    #height, width = len(img), len(img[1])
-    height = np.size(img, 0)
-    width = np.size(img, 1)
-    print(height)
+    height, width = len(img), len(img[1])
     block_heigth, block_width = int(height / 5), int(width / 5)
     original_filename, extension = get_basename(original_img_path)
     i = 0  # Contador de subimagenes
@@ -55,7 +58,7 @@ def generate_sub_samples(img, original_img_path):
         y += block_heigth
 
 def load_neg():
-    """Se encarga de cargar todos los samples negativos"""
+    # Se encarga de cargar todos los samples negativos con el mismo tamanio (final_size)
 
     files = os.listdir(root_folder + "/negative") # Lista todos los archivos de ese directorio
     for img_path in files:
@@ -68,7 +71,7 @@ def load_neg():
         save_img(img, folder_neg_to, filename)  # Guardo la imagen en la carpeta de negativos
 
 def load_pos():
-    # Carga las imagenes positivas pero las guarda todas con el mismo tamanio
+    # Carga las imagenes positivas pero las guarda todas con el mismo tamanio (final_size)
 
     files = os.listdir(root_folder + "/positive") # Lista todos los archivos de ese directorio
     for img_path in files:
