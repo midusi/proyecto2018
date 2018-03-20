@@ -3,8 +3,8 @@ import skimage.io
 import skimage.transform
 import matplotlib.pyplot as plt
 
-folder_neg_from = '/home/genaro/Descargas/TrainingData/DaimlerBenchmark/Data/TrainingData/NonPedestrians/'
-folder_neg_to = '/home/genaro/Descargas/TrainingData/DaimlerBenchmark/Data/TrainingData/NonPedestrians_final/'
+folder_neg_from = '/home/genaro/Descargas/DaimlerTrainingData/DaimlerBenchmark/Data/TrainingData/NonPedestrians/'
+folder_neg_to = '/home/genaro/Descargas/DaimlerTrainingData/DaimlerBenchmark/Data/TrainingData/NonPedestrians_final/'
 final_size = [96, 48]
 
 
