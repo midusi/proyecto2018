@@ -11,9 +11,11 @@ daimler_non_pedestrian_URL = '/home/genaro/Descargas/training/Daimler/NonPedestr
 daimler_pedestrian_URL = '/home/genaro/Descargas/training/Daimler/Pedestrians'
 INRIA_non_pedestrian_URL = '/home/genaro/Descargas/training/INRIA/neg'
 INRIA_pedestrian_URL = '/home/genaro/Descargas/training/INRIA/pos'
-hdf5_URL = '/home/genaro/PycharmProjects/checkpoints_proyecto2018/datasets.h5'  # Path de
-checkpoint_URL = '/home/genaro/PycharmProjects/checkpoints_proyecto2018/svmCheckpoint.pkl'
+
+hdf5_URL = '/home/genaro/PycharmProjects/checkpoints_proyecto2018/datasets.h5'  # Path donde se guarda los hogs en HDF5
+checkpoint_URL = '/home/genaro/PycharmProjects/checkpoints_proyecto2018/svmCheckpoint.pkl'  # Path donde se guarda el SVM ya entrenado
 predict_imgs_path = './imgs/'  # Path de la carpeta de donde sacara imagenes propias para predecir
+
 final_size = [96, 48]
 TRAIN = False  # Setear en False cuando se quiera usar el checkpoint y ahorrarse el training
 LOAD_FROM_IMGS = False  # Setear en False si se quiere levantar x, y desde HDF5
@@ -107,6 +109,10 @@ def get_predict_data():
 
 
 def main():
+    if not hdf5_URL or not checkpoint_URL:
+        print('No se ha seteado el path de HDF5 o del checkpoint!')
+        return
+
     if TRAIN:
         if LOAD_FROM_IMGS:
             x, y = load_training_data()  # Obtengo la data de entrenamiento (previamente corri los scripts de carga)

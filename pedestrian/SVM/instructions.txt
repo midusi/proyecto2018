@@ -1,0 +1,9 @@
+1- Instalar a los requerimientos que ya se tiene por defecto del proyecto el paquete 'h5py'.
+2- Setear las rutas de arriba del archivo 'svmSample.py' para configurar donde
+    se guardarán los datos de HOGS en formato HDF5 y el modelo entrenado.
+3- (OPCIONAL) Configurar algun parametro opcional como el tamaño de subset en caso de que no se quiera
+    parsear el dataset entero.
+4- Correr.
+
+IMPORTANTE: hay dos variables 'TRAIN' y 'LOAD_FROM_IMGS', leer ambos comentarios para usar los checkpoints y
+no tener que fumarse el parseo del dataset completo cada vez que se quiera ejecutar el script.
