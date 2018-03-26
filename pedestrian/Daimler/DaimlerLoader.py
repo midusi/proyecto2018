@@ -40,7 +40,8 @@ def resize(img):
 
 def save_img(img, folder, img_filename):
     """Guarda la imagen en el directorio final"""
-    skimage.io.imsave(folder + img_filename, img)
+    img_path = os.path.join(folder, img_filename)
+    skimage.io.imsave(img_path, img)
     # print('Imagen guardada en ' + folder + img_filename)
 
 

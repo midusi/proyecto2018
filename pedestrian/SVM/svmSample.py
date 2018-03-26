@@ -17,8 +17,8 @@ checkpoint_URL = '/home/genaro/PycharmProjects/checkpoints_proyecto2018/svmCheck
 predict_imgs_path = './imgs/'  # Path de la carpeta de donde sacara imagenes propias para predecir
 
 final_size = [96, 48]
-TRAIN = False  # Setear en False cuando se quiera usar el checkpoint y ahorrarse el training
-LOAD_FROM_IMGS = False  # Setear en False si se quiere levantar x, y desde HDF5
+TRAIN = True  # Setear en False cuando se quiera usar el checkpoint y ahorrarse el training
+LOAD_FROM_IMGS = True  # Setear en False si se quiere levantar x, y desde HDF5
 subset_size = 0  # Tamaño del dataset a parsear, si se setea en 0 se carga el dataset completo
 
 
@@ -36,8 +36,11 @@ def get_hog_from_path(path, grayscale=False):
             img = skimage.io.imread(img_path)  # Cargo la imagen
             if grayscale:
                 img = grayscaled_img(img)
-            img_hog = hog(img)
+            img_hog, img_prueba = hog(img, visualise=True)
+            print_image(img)
+            print_image(img_prueba)
             hogs.append(img_hog)
+            break
 
     return hogs, size  # Devuelvo lista de hogs y el tamaño total de elementos generados
 
@@ -86,7 +89,8 @@ def grayscaled_img(img):
 
 
 def load_predict_img(img_name):
-    img = skimage.io.imread(predict_imgs_path + img_name)  # Cargo la imagen
+    img_path = os.path.join(predict_imgs_path, img_name)
+    img = skimage.io.imread(img_path)  # Cargo la imagen
     img = grayscaled_img(img)
     img = resize(img)
     return hog(img)
@@ -145,6 +149,23 @@ def main():
         expected_str = 'Se esperaba ' + ('peaton' if expected_value == 1 else 'no peaton')
         correct = '✔' if prediction == expected_value else '✘'
         print(value, expected_str, correct)
+
+    h5f = h5py.File(hdf5_URL, 'r')
+    x = h5f['dataset_x'][:]
+    y = h5f['dataset_y'][:]
+
+    predictions = classifier_svm.predict(x)
+
+    # Imprimo de forma amigable los resultados de la prediccion
+    correct = error = 0
+    for prediction, expected_value in zip(predictions, y):
+        if prediction == expected_value:
+            correct += 1
+        else:
+            error += 1
+
+    print("Training set:")
+    print("Correctos:", correct, '| Erroneos:', error)
 
 
 if __name__ == '__main__':

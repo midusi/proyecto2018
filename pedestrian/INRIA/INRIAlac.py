@@ -2,6 +2,7 @@ import skimage.io
 import skimage.transform
 import matplotlib.pyplot as plt
 import re
+import os
 
 root_folder = '/home/genaro/Descargas/INRIAPerson/'
 folder_pos_to = '/home/genaro/Descargas/INRIAPerson/train_final/pos/'
@@ -24,7 +25,7 @@ def get_bounding_boxes(file_path):
     """"Devulve un listado de bounding boxes (Xmin, Ymin, Xmax, Ymax), esta informacion se extrae de los archivos
     dentro de la carpeta 'annotations' correspondientes a cada imagen"""
     bounding_boxes_list = []
-    bounding_boxes_file = open(root_folder + file_path, encoding="ISO-8859-1")
+    bounding_boxes_file = open(os.path.join(root_folder, file_path), encoding="ISO-8859-1")
     # Busco por cada linea si son datos de bounding boxes
     for line in bounding_boxes_file.readlines():
         if re.search('Bounding box', line):
@@ -58,7 +59,8 @@ def get_bounding_box_cropped(img, bounding_box):
 
 def save_img(img, folder, img_filename):
     """Guarda la imagen en el directorio final"""
-    skimage.io.imsave(folder + img_filename, img)
+    img_path = os.path.join(folder, img_filename)
+    skimage.io.imsave(img_path, img)
     # print('Imagen guardada en ' + folder + img_filename)
 
 
@@ -84,13 +86,13 @@ def generate_sub_samples(img, original_img_path):
 
 def load_pos():
     """Se encarga de cargar todos los samples positivos"""
-    content_pos = open(root_folder + 'Train/pos.lst')  # Abro el listado de imagenes positivas
-    content_annotations = open(root_folder + 'Train/annotations.lst')  # Abro el listado de imagenes positivas
+    content_pos = open(os.path.join(root_folder, 'Train/pos.lst'))  # Abro el listado de imagenes positivas
+    content_annotations = open(os.path.join(root_folder, 'Train/annotations.lst'))  # Abro el listado de imagenes positivas
     for img_path, bounding_boxes_path in zip(content_pos.readlines(), content_annotations.readlines()):
         # Elimino el caracter de nueva linea
         img_path = img_path.rstrip('\n')
         bounding_boxes_path = bounding_boxes_path.rstrip('\n')
-        img_original = skimage.io.imread(root_folder + img_path)  # Cargo la imagen
+        img_original = skimage.io.imread(os.path.join(root_folder, img_path))  # Cargo la imagen
         bounding_boxes_list = get_bounding_boxes(bounding_boxes_path)  # Obtengo los bounding boxes de personas a recortar
         for bounding_box in bounding_boxes_list:
             persona = get_bounding_box_cropped(img_original, bounding_box)  # Recorto a la persona
@@ -101,10 +103,10 @@ def load_pos():
 
 def load_neg():
     """Se encarga de cargar todos los samples negativos"""
-    content_neg = open(root_folder + 'Train/neg.lst')  # Abro el listado de imagenes positivas
+    content_neg = open(os.path.join(root_folder, 'Train/neg.lst'))  # Abro el listado de imagenes positivas
     for img_path in content_neg.readlines():
-        img_path = img_path.rstrip('\n')
-        img = skimage.io.imread(root_folder + img_path)  # Cargo la imagen
+        img_path = img_path.rstrip('\n')  # Cuando lee la linea queda el \n en el final, lo eliminamos
+        img = skimage.io.imread(os.path.join(root_folder, img_path))  # Cargo la imagen
         generate_sub_samples(img, img_path)  # Genero nuevas muestras a partir de la imagen
         img = resize(img)  # Re escalo la imagen original
         filename = get_filename(img_path)  # Genero el nombre que tendra la imagen guardada
