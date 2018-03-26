@@ -18,9 +18,16 @@ checkpoint_URL = '/home/genaro/PycharmProjects/checkpoints_proyecto2018/svmCheck
 predict_imgs_path = './imgs/'  # Path de la carpeta de donde sacara imagenes propias para predecir
 
 final_size = [96, 48]
-TRAIN = False  # Setear en False cuando se quiera usar el checkpoint y ahorrarse el training
-LOAD_FROM_IMGS = False  # Setear en False si se quiere levantar x, y desde HDF5
-subset_size = 0  # Tamaño del dataset a parsear, si se setea en 0 se carga el dataset completo
+TRAIN = True  # Setear en False cuando se quiera usar el checkpoint y ahorrarse el training
+LOAD_FROM_IMGS = True  # Setear en False si se quiere levantar x, y desde HDF5
+subset_size = 300  # Tamaño del dataset a parsear, si se setea en 0 se carga el dataset completo
+
+
+def print_mulitple(list_of_images):
+    for img in list_of_images:
+        plt.figure()
+        plt.imshow(img)
+    plt.show()
 
 
 def get_hog_from_path(path, grayscale=False):
@@ -38,7 +45,7 @@ def get_hog_from_path(path, grayscale=False):
             img = skimage.io.imread(img_path)  # Cargo la imagen
             if grayscale:
                 img = grayscaled_img(img)
-            img_hog = hog(img)
+            img_hog = hog(img, pixels_per_cell=(2, 2))
             hogs.append(img_hog)
 
     return hogs, size  # Devuelvo lista de hogs y el tamaño total de elementos generados
@@ -53,7 +60,6 @@ def load_training_data():
 
     # Leo los de Daimler positivos
     daimler_pos_hogs, size = get_hog_from_path(daimler_pedestrian_URL)
-    # x = np.concatenate((x, daimler_pos_hogs))
     x += daimler_pos_hogs
     y = np.append(y, np.ones(size))
 
@@ -79,7 +85,7 @@ def resize(img):
 def print_image(img):
     """No va a funcionar correctamente hasta que no se normalice la imagen a una
     escala aceptable, ya que el formato pgm va de 0 a 4096"""
-    plt.imshow(img, vmin=0, vmax=1)
+    plt.imshow(img)
     plt.show()
 
 
@@ -92,7 +98,7 @@ def load_predict_img(img_name):
     img = skimage.io.imread(img_path)  # Cargo la imagen
     img = grayscaled_img(img)
     img = resize(img)
-    return hog(img)
+    return hog(img, pixels_per_cell=(2, 2))
 
 
 def get_predict_data():
