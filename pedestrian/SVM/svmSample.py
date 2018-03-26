@@ -3,6 +3,7 @@ from sklearn import svm
 from sklearn.externals import joblib
 from skimage.feature import hog
 import os
+import random
 import numpy as np
 import matplotlib.pyplot as plt
 import h5py
@@ -17,8 +18,8 @@ checkpoint_URL = '/home/genaro/PycharmProjects/checkpoints_proyecto2018/svmCheck
 predict_imgs_path = './imgs/'  # Path de la carpeta de donde sacara imagenes propias para predecir
 
 final_size = [96, 48]
-TRAIN = True  # Setear en False cuando se quiera usar el checkpoint y ahorrarse el training
-LOAD_FROM_IMGS = True  # Setear en False si se quiere levantar x, y desde HDF5
+TRAIN = False  # Setear en False cuando se quiera usar el checkpoint y ahorrarse el training
+LOAD_FROM_IMGS = False  # Setear en False si se quiere levantar x, y desde HDF5
 subset_size = 0  # Tamaño del dataset a parsear, si se setea en 0 se carga el dataset completo
 
 
@@ -29,6 +30,7 @@ def get_hog_from_path(path, grayscale=False):
     size = 0
     for dirpath, dirnames, filenames in os.walk(path):  # Obtengo los nombres de los archivos
         if subset_size:
+            random.shuffle(filenames)  # Los pongo en orden aleatorio cuando genero subset
             filenames = filenames[0:subset_size]  # Si fue especificado un tamaño de subset recorto el dataset
         size += len(filenames)  # Cuento la cantidad de archivos que voy a generar el HOG
         for filename in filenames:
@@ -36,11 +38,8 @@ def get_hog_from_path(path, grayscale=False):
             img = skimage.io.imread(img_path)  # Cargo la imagen
             if grayscale:
                 img = grayscaled_img(img)
-            img_hog, img_prueba = hog(img, visualise=True)
-            print_image(img)
-            print_image(img_prueba)
+            img_hog = hog(img)
             hogs.append(img_hog)
-            break
 
     return hogs, size  # Devuelvo lista de hogs y el tamaño total de elementos generados
 
@@ -149,23 +148,6 @@ def main():
         expected_str = 'Se esperaba ' + ('peaton' if expected_value == 1 else 'no peaton')
         correct = '✔' if prediction == expected_value else '✘'
         print(value, expected_str, correct)
-
-    h5f = h5py.File(hdf5_URL, 'r')
-    x = h5f['dataset_x'][:]
-    y = h5f['dataset_y'][:]
-
-    predictions = classifier_svm.predict(x)
-
-    # Imprimo de forma amigable los resultados de la prediccion
-    correct = error = 0
-    for prediction, expected_value in zip(predictions, y):
-        if prediction == expected_value:
-            correct += 1
-        else:
-            error += 1
-
-    print("Training set:")
-    print("Correctos:", correct, '| Erroneos:', error)
 
 
 if __name__ == '__main__':

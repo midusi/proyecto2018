@@ -3,11 +3,13 @@ import skimage.transform
 import matplotlib.pyplot as plt
 import re
 import os
+import random
 
 root_folder = '/home/genaro/Descargas/INRIAPerson/'
 folder_pos_to = '/home/genaro/Descargas/INRIAPerson/train_final/pos/'
 folder_neg_to = '/home/genaro/Descargas/INRIAPerson/train_final/neg/'
 final_size = [96, 48]
+subset_size = 500
 
 
 def get_filename(path):
@@ -87,13 +89,26 @@ def generate_sub_samples(img, original_img_path):
 def load_pos():
     """Se encarga de cargar todos los samples positivos"""
     content_pos = open(os.path.join(root_folder, 'Train/pos.lst'))  # Abro el listado de imagenes positivas
-    content_annotations = open(os.path.join(root_folder, 'Train/annotations.lst'))  # Abro el listado de imagenes positivas
-    for img_path, bounding_boxes_path in zip(content_pos.readlines(), content_annotations.readlines()):
+    content_annotations = open(
+        os.path.join(root_folder, 'Train/annotations.lst'))  # Abro el listado de imagenes positivas
+    content_pos_lines = content_pos.readlines()
+    content_annotations_lines = content_annotations.readlines()
+    # Si fue especificado un tamaño de subset recorto la lista de lineas
+    if subset_size:
+        combined = list(zip(content_pos_lines, content_annotations_lines))
+        # Los pongo en orden aleatorio cuando genero subset
+        random.shuffle(combined)
+        content_pos_lines, content_annotations_lines = zip(*combined)
+        # Recorto el numero de resultados
+        content_pos_lines = content_pos_lines[0:subset_size]
+        content_annotations_lines = content_annotations_lines[0:subset_size]
+    for img_path, bounding_boxes_path in zip(content_pos_lines, content_annotations_lines):
         # Elimino el caracter de nueva linea
         img_path = img_path.rstrip('\n')
         bounding_boxes_path = bounding_boxes_path.rstrip('\n')
         img_original = skimage.io.imread(os.path.join(root_folder, img_path))  # Cargo la imagen
-        bounding_boxes_list = get_bounding_boxes(bounding_boxes_path)  # Obtengo los bounding boxes de personas a recortar
+        bounding_boxes_list = get_bounding_boxes(
+            bounding_boxes_path)  # Obtengo los bounding boxes de personas a recortar
         for bounding_box in bounding_boxes_list:
             persona = get_bounding_box_cropped(img_original, bounding_box)  # Recorto a la persona
             persona = resize(persona)  # Re escalo la imagen
@@ -104,10 +119,15 @@ def load_pos():
 def load_neg():
     """Se encarga de cargar todos los samples negativos"""
     content_neg = open(os.path.join(root_folder, 'Train/neg.lst'))  # Abro el listado de imagenes positivas
-    for img_path in content_neg.readlines():
+    content_neg_lines = content_neg.readlines()
+    if subset_size:
+        random.shuffle(content_neg_lines)  # Los pongo en orden aleatorio cuando genero subset
+        content_neg_lines = content_neg_lines[0:subset_size]  # Si fue especificado un tamaño de subset recorto el dataset
+    for img_path in content_neg_lines:
         img_path = img_path.rstrip('\n')  # Cuando lee la linea queda el \n en el final, lo eliminamos
         img = skimage.io.imread(os.path.join(root_folder, img_path))  # Cargo la imagen
-        generate_sub_samples(img, img_path)  # Genero nuevas muestras a partir de la imagen
+        if not subset_size:
+            generate_sub_samples(img, img_path)  # Genero nuevas muestras a partir de la imagen
         img = resize(img)  # Re escalo la imagen original
         filename = get_filename(img_path)  # Genero el nombre que tendra la imagen guardada
         save_img(img, folder_neg_to, filename)  # Guardo la imagen en la carpeta de negativos

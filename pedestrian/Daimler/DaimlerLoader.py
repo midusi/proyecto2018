@@ -1,4 +1,5 @@
 import os
+import random
 import skimage.io
 import skimage.transform
 import matplotlib.pyplot as plt
@@ -6,6 +7,7 @@ import matplotlib.pyplot as plt
 folder_neg_from = '/home/genaro/Descargas/DaimlerTrainingData/DaimlerBenchmark/Data/TrainingData/NonPedestrians/'
 folder_neg_to = '/home/genaro/Descargas/DaimlerTrainingData/DaimlerBenchmark/Data/TrainingData/NonPedestrians_final/'
 final_size = [96, 48]
+subset_size = 500
 
 
 def get_filename(path):
@@ -69,6 +71,9 @@ def generate_sub_samples(img, original_img_path):
 def load_neg():
     """Se encarga de cargar todos los samples negativos"""
     for dirpath, dirnames, filenames in os.walk(folder_neg_from):  # Obtengo los nombres de los archivos
+        if subset_size:
+            random.shuffle(filenames)  # Los pongo en orden aleatorio cuando genero subset
+            filenames = filenames[0:subset_size]  # Si fue especificado un tamaño de subset recorto el dataset
         for filename in filenames:
             img_path = os.path.join(dirpath, filename)
             img = skimage.io.imread(img_path)  # Cargo la imagen
