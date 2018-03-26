@@ -41,3 +41,10 @@ Pedestrian Detection?](http://kaiminghe.com/publications/eccv16ped.pdf) (Faster 
 
 * [Stanford Cars](http://ai.stanford.edu/~jkrause/cars/car_dataset.html) 16,185 imágenes de 196 clases de autos, (~8000 para train, ~8000 para split). En este caso no nos interesan las clases de autos sino las bbs.
 * [TME Motorway](http://cmp.felk.cvut.cz/data/motorway/) ~15gb, 1024x768, 20hz, yo tengo el .gpg para desencriptar
+
+# Temas relacionados
+
+## Taller: Aprendé a encontrar objetos en un video
+
+* El curso introductorio dado por Franco y Facundo se encuentra [aquí](http://facundoq.github.io/courses/images/index.html)
+
