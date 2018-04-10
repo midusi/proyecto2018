@@ -20,7 +20,9 @@ predict_imgs_path = './imgs/'  # Path de la carpeta de donde sacara imagenes pro
 final_size = [96, 48]
 TRAIN = True  # Setear en False cuando se quiera usar el checkpoint y ahorrarse el training
 LOAD_FROM_IMGS = True  # Setear en False si se quiere levantar x, y desde HDF5
-subset_size = 300  # Tamaño del dataset a parsear, si se setea en 0 se carga el dataset completo
+subset_size = 3000  # Tamaño del dataset a parsear, si se setea en 0 se carga el dataset completo
+
+TRAIN_AS_TEST = True  # (SOLO FUNCIONAL CON TRAIN EN True) Setear en False para que se use imagenes de prueba. Caso contrario usa el training
 
 
 def print_mulitple(list_of_images):
@@ -45,7 +47,7 @@ def get_hog_from_path(path, grayscale=False):
             img = skimage.io.imread(img_path)  # Cargo la imagen
             if grayscale:
                 img = grayscaled_img(img)
-            img_hog = hog(img, pixels_per_cell=(2, 2))
+            img_hog = hog(img, block_norm='L2-Hys', transform_sqrt=True)
             hogs.append(img_hog)
 
     return hogs, size  # Devuelvo lista de hogs y el tamaño total de elementos generados
@@ -90,15 +92,17 @@ def print_image(img):
 
 
 def grayscaled_img(img):
+    """Devuelve la imagen en escala de grises"""
     return np.mean(img, axis=2)
 
 
 def load_predict_img(img_name):
+    """Solo carga una imagen de prediccion personalizada"""
     img_path = os.path.join(predict_imgs_path, img_name)
     img = skimage.io.imread(img_path)  # Cargo la imagen
     img = grayscaled_img(img)
     img = resize(img)
-    return hog(img, pixels_per_cell=(2, 2))
+    return hog(img, block_norm='L2-Hys', transform_sqrt=True)
 
 
 def get_predict_data():
@@ -138,22 +142,50 @@ def main():
         h5f.close()  # Cierro el archivo HDF5
 
         # Genero y entreno el SVM
-        classifier_svm = svm.SVC()
+        classifier_svm = svm.LinearSVC(C=200)
         classifier_svm.fit(x, y)
 
         joblib.dump(classifier_svm, checkpoint_URL)
     else:
         classifier_svm = joblib.load(checkpoint_URL)
 
-    predict_data, expected = get_predict_data()
+    # TODO falta implementar el dataset de test
+    # Cargo el set de prediccion
+    if TRAIN_AS_TEST:
+        predict_data = x
+        expected = y
+    else:
+        predict_data, expected = get_predict_data()
+
+
     predictions = classifier_svm.predict(predict_data)
 
+    success = 0
     # Imprimo de forma amigable los resultados de la prediccion
     for prediction, expected_value in zip(predictions, expected):
-        value = 'Es peaton.' if prediction == 1 else 'No es peaton.'
-        expected_str = 'Se esperaba ' + ('peaton' if expected_value == 1 else 'no peaton')
-        correct = '✔' if prediction == expected_value else '✘'
+        if prediction == 1:
+            value = 'Es peaton.'
+        else:
+            value = 'No es peaton.'
+
+        expected_str = 'Se esperaba '
+        if expected_value == 1:
+            expected_str += 'peaton'
+        else:
+            expected_str += 'no peaton'
+
+        if prediction == expected_value:
+            success += 1
+            correct = '✔'
+        else:
+            correct = '✘'
+
         print(value, expected_str, correct)
+
+    total_predictions = len(predictions)
+
+    print("------------------------")
+    print("{} / {} correctos. {}% de precision".format(success, total_predictions, (100 * success) / total_predictions))
 
 
 if __name__ == '__main__':
