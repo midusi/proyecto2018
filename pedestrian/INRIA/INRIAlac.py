@@ -10,6 +10,7 @@ folder_pos_to = '/home/genaro/Descargas/INRIAPerson/train_final/pos/'
 folder_neg_to = '/home/genaro/Descargas/INRIAPerson/train_final/neg/'
 final_size = [96, 48]
 subset_size = 500
+generate_neg_sub_set = False  # Setear en True si se quiere generar samples extras con los negativos
 
 
 def get_filename(path):
@@ -126,7 +127,7 @@ def load_neg():
     for img_path in content_neg_lines:
         img_path = img_path.rstrip('\n')  # Cuando lee la linea queda el \n en el final, lo eliminamos
         img = skimage.io.imread(os.path.join(root_folder, img_path))  # Cargo la imagen
-        if not subset_size:
+        if generate_neg_sub_set and not subset_size:
             generate_sub_samples(img, img_path)  # Genero nuevas muestras a partir de la imagen
         img = resize(img)  # Re escalo la imagen original
         filename = get_filename(img_path)  # Genero el nombre que tendra la imagen guardada
