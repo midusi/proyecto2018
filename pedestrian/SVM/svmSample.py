@@ -13,16 +13,21 @@ daimler_pedestrian_URL = '/home/genaro/Descargas/training/Daimler/Pedestrians'
 INRIA_non_pedestrian_URL = '/home/genaro/Descargas/training/INRIA/neg'
 INRIA_pedestrian_URL = '/home/genaro/Descargas/training/INRIA/pos'
 
-hdf5_URL = '/home/genaro/PycharmProjects/checkpoints_proyecto2018/datasets.h5'  # Path donde se guarda los hogs en HDF5
-checkpoint_URL = '/home/genaro/PycharmProjects/checkpoints_proyecto2018/svmCheckpoint.pkl'  # Path donde se guarda el SVM ya entrenado
+hdf5_URL = '/home/beto0607/Facu/Pedestrians/Datasets/datasets.h5'  # Path donde se guarda los hogs en HDF5
+checkpoint_URL = '/home/beto0607/Facu/Pedestrians/Datasets/svmCheckpoint.pkl'  # Path donde se guarda el SVM ya entrenado
 predict_imgs_path = './imgs/'  # Path de la carpeta de donde sacara imagenes propias para predecir
 
 final_size = [96, 48]
-TRAIN = True  # Setear en False cuando se quiera usar el checkpoint y ahorrarse el training
-LOAD_FROM_IMGS = True  # Setear en False si se quiere levantar x, y desde HDF5
+TRAIN = False  # Setear en False cuando se quiera usar el checkpoint y ahorrarse el training
+LOAD_FROM_IMGS = False  # Setear en False si se quiere levantar x, y desde HDF5
 subset_size = 3000  # Tamaño del dataset a parsear, si se setea en 0 se carga el dataset completo
 
 TRAIN_AS_TEST = True  # (SOLO FUNCIONAL CON TRAIN EN True) Setear en False para que se use imagenes de prueba. Caso contrario usa el training
+
+TEST_DATA = True #Testear las imagenes de los path de abajo
+
+TEST_DATA_POS_PATH = '/home/beto0607/Facu/Pedestrians/Datasets/Temp/INRIA/pos'
+TEST_DATA_NEG_PATH = '/home/beto0607/Facu/Pedestrians/Datasets/Temp/INRIA/neg'
 
 
 def print_mulitple(list_of_images):
@@ -120,6 +125,18 @@ def get_predict_data():
 
     return hogs, expected
 
+def load_test_data():
+    inria_neg_hogs, size = get_hog_from_path(TEST_DATA_NEG_PATH, grayscale=True)
+    x = inria_neg_hogs
+    y = np.zeros(size)
+
+    # Leo los de INRIA positivos
+    inria_pos_hogs, size = get_hog_from_path(TEST_DATA_POS_PATH, grayscale=True)
+    x += inria_pos_hogs
+    y = np.append(y, np.ones(size))
+
+    return x, y
+
 
 def main():
     if not hdf5_URL or not checkpoint_URL:
@@ -149,11 +166,9 @@ def main():
     else:
         classifier_svm = joblib.load(checkpoint_URL)
 
-    # TODO falta implementar el dataset de test
     # Cargo el set de prediccion
-    if TRAIN_AS_TEST:
-        predict_data = x
-        expected = y
+    if TEST_DATA:
+        predict_data, expected = load_test_data()
     else:
         predict_data, expected = get_predict_data()
 
