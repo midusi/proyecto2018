@@ -10,7 +10,8 @@ folder_pos_to = '/home/genaro/Descargas/INRIAPerson/train_final/pos/'
 folder_neg_to = '/home/genaro/Descargas/INRIAPerson/train_final/neg/'
 final_size = [96, 48]
 subset_size = 500
-generate_neg_sub_set = False  # Setear en True si se quiere generar samples extras con los negativos
+generate_neg_subset = False  # Setear en True si se quiere generar samples extras con los negativos
+train = False  # En false usa la carpeta de test. Setear a True para usar la carpeta de training de INRIA
 
 
 def get_filename(path):
@@ -89,9 +90,11 @@ def generate_sub_samples(img, original_img_path):
 
 def load_pos():
     """Se encarga de cargar todos los samples positivos"""
-    content_pos = open(os.path.join(root_folder, 'Train/pos.lst'))  # Abro el listado de imagenes positivas
-    content_annotations = open(
-        os.path.join(root_folder, 'Train/annotations.lst'))  # Abro el listado de imagenes positivas
+    lst_file_folder = 'Train' if train else 'Test'
+    lst_pos_file = os.path.join(lst_file_folder, 'pos.lst')
+    lst_annotations_file = os.path.join(lst_file_folder, 'annotations.lst')
+    content_pos = open(os.path.join(root_folder, lst_pos_file))  # Abro el listado de imagenes positivas
+    content_annotations = open(os.path.join(root_folder, lst_annotations_file))  # Abro el listado de imagenes positivas
     content_pos_lines = content_pos.readlines()
     content_annotations_lines = content_annotations.readlines()
     # Si fue especificado un tamaño de subset recorto la lista de lineas
@@ -119,7 +122,9 @@ def load_pos():
 
 def load_neg():
     """Se encarga de cargar todos los samples negativos"""
-    content_neg = open(os.path.join(root_folder, 'Train/neg.lst'))  # Abro el listado de imagenes positivas
+    lst_file_folder = 'Train' if train else 'Test'
+    lst_neg_file = os.path.join(lst_file_folder, 'neg.lst')
+    content_neg = open(os.path.join(root_folder, lst_neg_file))  # Abro el listado de imagenes positivas
     content_neg_lines = content_neg.readlines()
     if subset_size:
         random.shuffle(content_neg_lines)  # Los pongo en orden aleatorio cuando genero subset
@@ -127,7 +132,7 @@ def load_neg():
     for img_path in content_neg_lines:
         img_path = img_path.rstrip('\n')  # Cuando lee la linea queda el \n en el final, lo eliminamos
         img = skimage.io.imread(os.path.join(root_folder, img_path))  # Cargo la imagen
-        if generate_neg_sub_set and not subset_size:
+        if generate_neg_subset and not subset_size:
             generate_sub_samples(img, img_path)  # Genero nuevas muestras a partir de la imagen
         img = resize(img)  # Re escalo la imagen original
         filename = get_filename(img_path)  # Genero el nombre que tendra la imagen guardada
