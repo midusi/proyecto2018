@@ -210,22 +210,24 @@ def main():
 
         if prediction == 1:  # Si el SVM dijo que era un peaton...
             pedrestrian_predected += 1
-            if expected_value == 1: # Si era un peaton y fue bien reconocido...
+            if expected_value == 1:  # Si era un peaton y fue bien reconocido...
                 pedrestrian_success += 1
 
         if prediction == expected_value:
             success += 1
-            #correct = '✔'
+            # correct = '✔'
         else:
             error += 1
-            #correct = '✘'
+            # correct = '✘'
 
-        #print(value, expected_str, correct)
+        # print(value, expected_str, correct)
 
     total_predictions = len(predictions)
 
     print("------------------------")
-    print("Positivos y negativos acertados --> {} / {} correctos. {}% de aciertos".format(success, total_predictions, (100 * success) / total_predictions))
+    print("Positivos y negativos acertados --> {} / {} correctos. {}% de aciertos".format(
+        success, total_predictions, (100 * success) / total_predictions
+    ))
     print("Precision --> {}".format(pedrestrian_success / pedrestrian_predected))
     print("Recall --> {}".format(pedrestrian_success / total_pedestrian))
 
