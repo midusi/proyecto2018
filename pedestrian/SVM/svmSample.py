@@ -1,4 +1,5 @@
 import skimage.io
+import skimage.transform
 from sklearn import svm
 from sklearn.externals import joblib
 from skimage.feature import hog
@@ -13,8 +14,8 @@ DAIMLER_PEDESTRIAN_PATH = '/home/genaro/Descargas/training/Daimler/Pedestrians'
 INRIA_NON_PEDESTRIAN_PATH = '/home/genaro/Descargas/training/INRIA/neg'
 INRIA_PEDESTRIAN_PATH = '/home/genaro/Descargas/training/INRIA/pos'
 
-HDF5_PATH = '/home/beto0607/Facu/Pedestrians/Datasets/datasets.h5'  # Path donde se guarda los hogs en HDF5
-CHECKPOINT_PATH = '/home/beto0607/Facu/Pedestrians/Datasets/svmCheckpoint.pkl'  # Path donde se guarda el SVM ya entrenado
+HDF5_PATH = '/home/genaro/PycharmProjects/checkpoints_proyecto2018/datasets.h5'  # Path donde se guarda los hogs en HDF5
+CHECKPOINT_PATH = '/home/genaro/PycharmProjects/checkpoints_proyecto2018/svmCheckpoint.pkl'  # Path donde se guarda el SVM ya entrenado
 PREDICT_IMGS_PATH = './imgs/'  # Path de la carpeta de donde sacara imagenes propias para predecir
 
 FINAL_SIZE = [96, 48]
@@ -23,7 +24,7 @@ LOAD_FROM_IMGS = False  # Setear en False si se quiere levantar x, y desde HDF5
 SUBSET_SIZE = 3000  # Tamaño del dataset a parsear, si se setea en 0 se carga el dataset completo
 
 # Datos de test
-TEST_DATA = True  # Testear las imagenes de los path de abajo
+TEST_DATA = False  # Testear las imagenes de los path de abajo
 TEST_DATA_POS_PATH = '/home/beto0607/Facu/Pedestrians/Datasets/Temp/INRIA/pos'
 TEST_DATA_NEG_PATH = '/home/beto0607/Facu/Pedestrians/Datasets/Temp/INRIA/neg'
 
@@ -60,15 +61,20 @@ def get_hog_from_path(path, grayscale=False):
 def load_training_data():
     """Carga los datos de training desde los 4 paths de training
     seteados arriba"""
+    positives = negatives = 0  # Para dar informacion de cantidad de ejemplos positivos y negativos
     # Leo los de Daimler negativos
     daimler_neg_hogs, size = get_hog_from_path(DAIMLER_NON_PEDESTRIAN_PATH)
     x = daimler_neg_hogs  # Arreglo que almacenara los HOGS de cada imagen
     y = np.zeros(size)
 
+    negatives += size
+
     # Leo los de Daimler positivos
     daimler_pos_hogs, size = get_hog_from_path(DAIMLER_PEDESTRIAN_PATH)
     x += daimler_pos_hogs
     y = np.append(y, np.ones(size))
+
+    positives += size
 
     # Leo los de INRIA negativos
     # NOTA: escalo a gris estos negativos y positivos porque INRIA viene en RGB
@@ -76,11 +82,16 @@ def load_training_data():
     x += inria_neg_hogs
     y = np.append(y, np.zeros(size))
 
+    negatives += size
+
     # Leo los de INRIA positivos
     inria_pos_hogs, size = get_hog_from_path(INRIA_PEDESTRIAN_PATH, grayscale=True)
     x += inria_pos_hogs
     y = np.append(y, np.ones(size))
 
+    positives += size
+
+    print("Entrenando con {} ejemplos positivos y {} ejemplos negativos".format(positives, negatives))
     return x, y
 
 
@@ -177,32 +188,46 @@ def main():
 
     predictions = classifier_svm.predict(predict_data)
 
-    success = 0
+    success = error = 0
+    total_pedestrian = pedrestrian_predected = pedrestrian_success = 0
     # Imprimo de forma amigable los resultados de la prediccion
+    # y saco precision y recall
     for prediction, expected_value in zip(predictions, expected):
-        if prediction == 1:
-            value = 'Es peaton.'
-        else:
-            value = 'No es peaton.'
+        # if prediction == 1:
+        #     value = 'Es peaton.'
+        # else:
+        #     value = 'No es peaton.'
+        #
+        # expected_str = 'Se esperaba '
+        # if expected_value == 1:
+        #     expected_str += 'peaton'
+        # else:
+        #     expected_str += 'no peaton'
 
-        expected_str = 'Se esperaba '
-        if expected_value == 1:
-            expected_str += 'peaton'
-        else:
-            expected_str += 'no peaton'
+        # Para sacar la precision y exhaustividad (recall)
+        if expected_value == 1:  # Si es un peaton realmente...
+            total_pedestrian += 1
+
+        if prediction == 1:  # Si el SVM dijo que era un peaton...
+            pedrestrian_predected += 1
+            if expected_value == 1: # Si era un peaton y fue bien reconocido...
+                pedrestrian_success += 1
 
         if prediction == expected_value:
             success += 1
-            correct = '✔'
+            #correct = '✔'
         else:
-            correct = '✘'
+            error += 1
+            #correct = '✘'
 
-        print(value, expected_str, correct)
+        #print(value, expected_str, correct)
 
     total_predictions = len(predictions)
 
     print("------------------------")
-    print("{} / {} correctos. {}% de precision".format(success, total_predictions, (100 * success) / total_predictions))
+    print("Positivos y negativos acertados --> {} / {} correctos. {}% de aciertos".format(success, total_predictions, (100 * success) / total_predictions))
+    print("Precision --> {}".format(pedrestrian_success / pedrestrian_predected))
+    print("Recall --> {}".format(pedrestrian_success / total_pedestrian))
 
 
 if __name__ == '__main__':
