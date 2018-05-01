@@ -15,7 +15,7 @@ INRIA_NON_PEDESTRIAN_PATH = '/home/genaro/Descargas/training/INRIA/neg'
 INRIA_PEDESTRIAN_PATH = '/home/genaro/Descargas/training/INRIA/pos'
 
 HDF5_PATH = '/home/genaro/PycharmProjects/checkpoints_proyecto2018/datasets.h5'  # Path donde se guarda los hogs en HDF5
-CHECKPOINT_PATH = '/home/genaro/PycharmProjects/checkpoints_proyecto2018/svmCheckpoint.pkl'  # Path donde se guarda el SVM ya entrenado
+CHECKPOINT_PATH = '/home/genaro/PycharmProjects/checkpoints_proyecto2018/svmCheckpoint.pkl' # Path donde se guarda el SVM ya entrenado
 PREDICT_IMGS_PATH = './imgs/'  # Path de la carpeta de donde sacara imagenes propias para predecir
 
 FINAL_SIZE = [96, 48]
@@ -24,9 +24,12 @@ LOAD_FROM_IMGS = False  # Setear en False si se quiere levantar x, y desde HDF5
 SUBSET_SIZE = 3000  # Tamaño del dataset a parsear, si se setea en 0 se carga el dataset completo
 
 # Datos de test
-TEST_DATA = False  # Testear las imagenes de los path de abajo
-TEST_DATA_POS_PATH = '/home/beto0607/Facu/Pedestrians/Datasets/Temp/INRIA/pos'
-TEST_DATA_NEG_PATH = '/home/beto0607/Facu/Pedestrians/Datasets/Temp/INRIA/neg'
+TEST_DATA = True  # Testear las imagenes de los path de abajo
+USE_TRAINING_AS_TEST_DATA = False  # Con True usa los datos de Training como test. False para usar las rutas de abajo
+
+# Si USE_TRAINING_AS_TEST_DATA esta en True estos parametros se ignoran
+TEST_DATA_POS_PATH = '/home/genaro/Descargas/PedCut2013_SegmentationDataset/data/testData/left_images'
+TEST_DATA_NEG_PATH = '/home/genaro/Descargas/PedCut2013_SegmentationDataset/data/testData/vacia'
 
 
 def print_mulitple(list_of_images):
@@ -37,7 +40,7 @@ def print_mulitple(list_of_images):
     plt.show()
 
 
-def get_hog_from_path(path, grayscale=False):
+def get_hog_from_path(path, grayscale=False, must_resize=False):
     """Genera el HOG de todas las imagenes que se encuentran
     dentro de la carpeta pasada por parametro"""
     hogs = []
@@ -50,10 +53,14 @@ def get_hog_from_path(path, grayscale=False):
         for filename in filenames:
             img_path = os.path.join(dirpath, filename)
             img = skimage.io.imread(img_path)  # Cargo la imagen
+            # Si pidieron hacer resize o pasar a blanco y negro lo hago
+            if must_resize:
+                img = resize(img)
             if grayscale:
                 img = grayscaled_img(img)
             img_hog = hog(img, block_norm='L2-Hys', transform_sqrt=True)
             hogs.append(img_hog)
+            i += 1
 
     return hogs, size  # Devuelvo lista de hogs y el tamaño total de elementos generados
 
@@ -67,6 +74,7 @@ def load_training_data():
     x = daimler_neg_hogs  # Arreglo que almacenara los HOGS de cada imagen
     y = np.zeros(size)
 
+    print("Daimler negativos --> {}".format(size))
     negatives += size
 
     # Leo los de Daimler positivos
@@ -74,6 +82,7 @@ def load_training_data():
     x += daimler_pos_hogs
     y = np.append(y, np.ones(size))
 
+    print("Daimler positivos --> {}".format(size))
     positives += size
 
     # Leo los de INRIA negativos
@@ -82,6 +91,7 @@ def load_training_data():
     x += inria_neg_hogs
     y = np.append(y, np.zeros(size))
 
+    print("INRIA negativos --> {}".format(size))
     negatives += size
 
     # Leo los de INRIA positivos
@@ -89,9 +99,10 @@ def load_training_data():
     x += inria_pos_hogs
     y = np.append(y, np.ones(size))
 
+    print("INRIA positivos --> {}".format(size))
     positives += size
 
-    print("Entrenando con {} ejemplos positivos y {} ejemplos negativos".format(positives, negatives))
+    print("Entrenando en total con {} ejemplos positivos y {} ejemplos negativos".format(positives, negatives))
     return x, y
 
 
@@ -137,15 +148,23 @@ def get_predict_data():
     return hogs, expected
 
 
+def get_hdf5_datasets():
+    """Devuelve los datos de training guardados en disco"""
+    h5f = h5py.File(HDF5_PATH, 'r')
+    x, y = h5f['dataset_x'][:], h5f['dataset_y'][:]
+    h5f.close()  # Cierro el archivo HDF5
+    return x, y
+
+
 def load_test_data():
     """Toma los datos de test usando los paths seteados anteriormente"""
     # Leo los test de INRIA negativos
-    inria_neg_hogs, size = get_hog_from_path(TEST_DATA_NEG_PATH, grayscale=True)
+    inria_neg_hogs, size = get_hog_from_path(TEST_DATA_NEG_PATH, grayscale=True, must_resize=True)
     x = inria_neg_hogs
     y = np.zeros(size)
 
     # Leo los test de INRIA positivos
-    inria_pos_hogs, size = get_hog_from_path(TEST_DATA_POS_PATH, grayscale=True)
+    inria_pos_hogs, size = get_hog_from_path(TEST_DATA_POS_PATH, grayscale=True, must_resize=True)
     x += inria_pos_hogs
     y = np.append(y, np.ones(size))
 
@@ -165,15 +184,12 @@ def main():
             h5f = h5py.File(HDF5_PATH, 'w')
             h5f.create_dataset('dataset_x', data=x)
             h5f.create_dataset('dataset_y', data=y)
+            h5f.close()  # Cierro el archivo HDF5
         else:
-            h5f = h5py.File(HDF5_PATH, 'r')
-            x = h5f['dataset_x'][:]
-            y = h5f['dataset_y'][:]
-
-        h5f.close()  # Cierro el archivo HDF5
+            x, y = get_hdf5_datasets()
 
         # Genero y entreno el SVM
-        classifier_svm = svm.LinearSVC(C=200)
+        classifier_svm = svm.LinearSVC(C=250)
         classifier_svm.fit(x, y)
 
         joblib.dump(classifier_svm, CHECKPOINT_PATH)
@@ -182,28 +198,26 @@ def main():
 
     # Cargo el set de prediccion
     if TEST_DATA:
-        predict_data, expected = load_test_data()  # Si se quiere usar el dataset de tests seteados...
+        if USE_TRAINING_AS_TEST_DATA:
+            predict_data, expected = get_hdf5_datasets()
+        else:
+            predict_data, expected = load_test_data()  # Si se quiere usar el dataset de tests seteados...
     else:
         predict_data, expected = get_predict_data()  # Si se quiere utilizar la data de test fija
 
+    # Imprimo los datos del clasificador para los experimentos
+    print(classifier_svm)
+
+    # Genero la prediccion
     predictions = classifier_svm.predict(predict_data)
 
     success = error = 0
     total_pedestrian = pedrestrian_predected = pedrestrian_success = 0
+    false_positives = false_negatives = 0
     # Imprimo de forma amigable los resultados de la prediccion
     # y saco precision y recall
+    i = 0
     for prediction, expected_value in zip(predictions, expected):
-        # if prediction == 1:
-        #     value = 'Es peaton.'
-        # else:
-        #     value = 'No es peaton.'
-        #
-        # expected_str = 'Se esperaba '
-        # if expected_value == 1:
-        #     expected_str += 'peaton'
-        # else:
-        #     expected_str += 'no peaton'
-
         # Para sacar la precision y exhaustividad (recall)
         if expected_value == 1:  # Si es un peaton realmente...
             total_pedestrian += 1
@@ -212,15 +226,18 @@ def main():
             pedrestrian_predected += 1
             if expected_value == 1:  # Si era un peaton y fue bien reconocido...
                 pedrestrian_success += 1
+            else:
+                false_positives += 1
+        else:
+            if expected_value == 1:
+                false_negatives += 1
 
         if prediction == expected_value:
             success += 1
-            # correct = '✔'
         else:
             error += 1
-            # correct = '✘'
 
-        # print(value, expected_str, correct)
+        i += 1
 
     total_predictions = len(predictions)
 
@@ -228,8 +245,9 @@ def main():
     print("Positivos y negativos acertados --> {} / {} correctos. {}% de aciertos".format(
         success, total_predictions, (100 * success) / total_predictions
     ))
-    print("Precision --> {}".format(pedrestrian_success / pedrestrian_predected))
-    print("Recall --> {}".format(pedrestrian_success / total_pedestrian))
+    print("Precision --> {} / {} = {}".format(pedrestrian_success, pedrestrian_predected, pedrestrian_success / pedrestrian_predected))
+    print("Recall --> {} / {} = {}".format(pedrestrian_success, total_pedestrian, pedrestrian_success / total_pedestrian))
+    print("Falsos positivos --> {} | Falsos negativos --> {}".format(false_positives, false_negatives))
 
 
 if __name__ == '__main__':
