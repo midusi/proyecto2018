@@ -26,7 +26,7 @@ testPath = os.path.join(workspace, 'Test\\') # Path de la carpeta de donde sacar
 finalSize = [96, 48]
 TRAIN = False  # Setear en False cuando se quiera usar el checkpoint y ahorrarse el training
 LOAD_FROM_IMGS = False  # Setear en False si se quiere levantar x, y desde HDF5
-TEST = False # Setear en False para testear sobre el dataset de entrenamiento
+TEST = True # Setear en False para testear sobre el dataset de entrenamiento
 
 
 def grayscaled_img(img):
@@ -84,7 +84,8 @@ def main():
             xTrain,yTrain = loadHogsHDF5(hdf5Train)
 
         # Entrena el SVM
-        classifierSvm = svm.SVC()
+        #classifierSvm = svm.SVC()
+        classifierSvm = svm.LinearSVC()
         classifierSvm.fit(xTrain, yTrain)
 
         joblib.dump(classifierSvm, checkpoint)
