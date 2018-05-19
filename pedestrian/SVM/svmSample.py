@@ -19,8 +19,8 @@ CHECKPOINT_PATH = '/home/genaro/PycharmProjects/checkpoints_proyecto2018/svmChec
 PREDICT_IMGS_PATH = './imgs/'  # Path de la carpeta de donde sacara imagenes propias para predecir
 
 FINAL_SIZE = [96, 48]
-TRAIN = False  # Setear en False cuando se quiera usar el checkpoint y ahorrarse el training
-LOAD_FROM_IMGS = False  # Setear en False si se quiere levantar x, y desde HDF5
+TRAIN = True  # Setear en False cuando se quiera usar el checkpoint y ahorrarse el training
+LOAD_FROM_IMGS = True  # Setear en False si se quiere levantar x, y desde HDF5
 SUBSET_SIZE = 3000  # Tamaño del dataset a parsear, si se setea en 0 se carga el dataset completo
 
 # Datos de test
@@ -60,7 +60,6 @@ def get_hog_from_path(path, grayscale=False, must_resize=False):
                 img = grayscaled_img(img)
             img_hog = hog(img, block_norm='L2-Hys', transform_sqrt=True)
             hogs.append(img_hog)
-            i += 1
 
     return hogs, size  # Devuelvo lista de hogs y el tamaño total de elementos generados
 
