@@ -21,10 +21,10 @@ PREDICT_IMGS_PATH = './imgs/'  # Path de la carpeta de donde sacara imagenes pro
 FINAL_SIZE = [96, 48]
 TRAIN = True  # Setear en False cuando se quiera usar el checkpoint y ahorrarse el training
 LOAD_FROM_IMGS = True  # Setear en False si se quiere levantar x, y desde HDF5
-SUBSET_SIZE = 3000  # Tamaño del dataset a parsear, si se setea en 0 se carga el dataset completo
+SUBSET_SIZE = 0  # Tamaño del dataset a parsear, si se setea en 0 se carga el dataset completo
 
 # Datos de test
-TEST_DATA = True  # Testear las imagenes de los path de abajo
+TEST_DATA = False  # Testear las imagenes de los path de abajo
 USE_TRAINING_AS_TEST_DATA = False  # Con True usa los datos de Training como test. False para usar las rutas de abajo
 
 # Si USE_TRAINING_AS_TEST_DATA esta en True estos parametros se ignoran
