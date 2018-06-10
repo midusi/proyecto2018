@@ -3,6 +3,7 @@ import skimage.transform
 from sklearn import svm
 from sklearn.externals import joblib
 from skimage.feature import hog
+from skimage.color import rgb2gray
 import os
 import random
 import numpy as np
@@ -19,13 +20,14 @@ CHECKPOINT_PATH = '/home/genaro/PycharmProjects/checkpoints_proyecto2018/svmChec
 PREDICT_IMGS_PATH = './imgs/'  # Path de la carpeta de donde sacara imagenes propias para predecir
 
 FINAL_SIZE = [96, 48]
-TRAIN = True  # Setear en False cuando se quiera usar el checkpoint y ahorrarse el training
-LOAD_FROM_IMGS = True  # Setear en False si se quiere levantar x, y desde HDF5
-SUBSET_SIZE = 0  # Tamaño del dataset a parsear, si se setea en 0 se carga el dataset completo
+TRAIN = False  # Setear en False cuando se quiera usar el checkpoint y ahorrarse el training
+LOAD_FROM_IMGS = False  # Setear en False si se quiere levantar x, y desde HDF5
+SUBSET_SIZE = 3000  # Tamaño del dataset a parsear, si se setea en 0 se carga el dataset completo
+VISUALIZE_IMG = False  # Mostrar las imagenes que van a entrar al HOG()
 
 # Datos de test
-TEST_DATA = False  # Testear las imagenes de los path de abajo
-USE_TRAINING_AS_TEST_DATA = False  # Con True usa los datos de Training como test. False para usar las rutas de abajo
+TEST_DATA = True  # Testear las imagenes de los path de abajo
+USE_TRAINING_AS_TEST_DATA = True  # Con True usa los datos de Training como test. False para usar las rutas de abajo
 
 # Si USE_TRAINING_AS_TEST_DATA esta en True estos parametros se ignoran
 TEST_DATA_POS_PATH = '/home/genaro/Descargas/PedCut2013_SegmentationDataset/data/testData/left_images'
@@ -40,7 +42,7 @@ def print_mulitple(list_of_images):
     plt.show()
 
 
-def get_hog_from_path(path, grayscale=False, must_resize=False):
+def get_hog_from_path(path, grayscale=False, must_resize=False, normalize=True):
     """Genera el HOG de todas las imagenes que se encuentran
     dentro de la carpeta pasada por parametro"""
     hogs = []
@@ -53,11 +55,20 @@ def get_hog_from_path(path, grayscale=False, must_resize=False):
         for filename in filenames:
             img_path = os.path.join(dirpath, filename)
             img = skimage.io.imread(img_path)  # Cargo la imagen
+
             # Si pidieron hacer resize o pasar a blanco y negro lo hago
             if must_resize:
                 img = resize(img)
             if grayscale:
                 img = grayscaled_img(img)
+                if normalize:
+                    # Normalizo la imagen
+                    img = img / max(img.flatten())
+
+            if VISUALIZE_IMG:
+                print(img_path)
+                print(img)
+                print_image(img)
             img_hog = hog(img, block_norm='L2-Hys', transform_sqrt=True)
             hogs.append(img_hog)
 
@@ -69,7 +80,7 @@ def load_training_data():
     seteados arriba"""
     positives = negatives = 0  # Para dar informacion de cantidad de ejemplos positivos y negativos
     # Leo los de Daimler negativos
-    daimler_neg_hogs, size = get_hog_from_path(DAIMLER_NON_PEDESTRIAN_PATH)
+    daimler_neg_hogs, size = get_hog_from_path(DAIMLER_NON_PEDESTRIAN_PATH, grayscale=True)
     x = daimler_neg_hogs  # Arreglo que almacenara los HOGS de cada imagen
     y = np.zeros(size)
 
@@ -77,7 +88,7 @@ def load_training_data():
     negatives += size
 
     # Leo los de Daimler positivos
-    daimler_pos_hogs, size = get_hog_from_path(DAIMLER_PEDESTRIAN_PATH)
+    daimler_pos_hogs, size = get_hog_from_path(DAIMLER_PEDESTRIAN_PATH, grayscale=True)
     x += daimler_pos_hogs
     y = np.append(y, np.ones(size))
 
@@ -113,13 +124,13 @@ def resize(img):
 def print_image(img):
     """No va a funcionar correctamente hasta que no se normalice la imagen a una
     escala aceptable, ya que el formato pgm va de 0 a 4096"""
-    plt.imshow(img)
+    plt.imshow(img, cmap="gray")
     plt.show()
 
 
 def grayscaled_img(img):
     """Devuelve la imagen en escala de grises"""
-    return np.mean(img, axis=2)
+    return rgb2gray(img)
 
 
 def load_predict_img(img_name):
