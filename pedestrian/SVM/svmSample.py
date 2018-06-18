@@ -1,7 +1,6 @@
 import skimage.io
 import skimage.transform
 from sklearn import svm
-from sklearn.preprocessing import normalize
 from sklearn.externals import joblib
 from skimage.feature import hog
 from skimage.color import rgb2gray
@@ -28,7 +27,7 @@ VISUALIZE_IMG = False  # Mostrar las imagenes que van a entrar al HOG()
 
 # Datos de test
 TEST_DATA = True  # Testear las imagenes de los path de abajo
-USE_TRAINING_AS_TEST_DATA = False  # Con True usa los datos de Training como test. False para usar las rutas de abajo
+USE_TRAINING_AS_TEST_DATA = True  # Con True usa los datos de Training como test. False para usar las rutas de abajo
 
 # Si USE_TRAINING_AS_TEST_DATA esta en True estos parametros se ignoran
 TEST_DATA_POS_PATH = '/home/genaro/Descargas/PedCut2013_SegmentationDataset/data/testData/left_images'
@@ -43,7 +42,7 @@ def print_mulitple(list_of_images):
     plt.show()
 
 
-def get_hog_from_path(path, grayscale=False, must_resize=False, must_normalize=True):
+def get_hog_from_path(path, grayscale=False, must_resize=False, normalize=True):
     """Genera el HOG de todas las imagenes que se encuentran
     dentro de la carpeta pasada por parametro"""
     hogs = []
@@ -56,18 +55,15 @@ def get_hog_from_path(path, grayscale=False, must_resize=False, must_normalize=T
         for filename in filenames:
             img_path = os.path.join(dirpath, filename)
             img = skimage.io.imread(img_path)  # Cargo la imagen
-            # img = np.array(img)  # Convierto en arreglo numpy
-            # print(img)
 
             # Si pidieron hacer resize o pasar a blanco y negro lo hago
             if must_resize:
                 img = resize(img)
             if grayscale:
                 img = grayscaled_img(img)
-
-            # Normalizo la imagen
-            if must_normalize:
-                img = normalize_img(img)
+                if normalize:
+                    # Normalizo la imagen
+                    img = img / max(img.flatten())
 
             if VISUALIZE_IMG:
                 print(img_path)
@@ -130,11 +126,6 @@ def print_image(img):
     escala aceptable, ya que el formato pgm va de 0 a 4096"""
     plt.imshow(img, cmap="gray")
     plt.show()
-
-
-def normalize_img(img):
-    """Normaliza la imagen con el maximo valor usando sklearn"""
-    return normalize(img, 'max')
 
 
 def grayscaled_img(img):
