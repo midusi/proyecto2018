@@ -91,3 +91,34 @@ def GetHogsFromList(images, grayscale=False, resize=False, finalSize=None, subse
         if(i == subset):
             return hogs
     return hogs
+def GetHogsFromPathWithWindow(pathToFolder, window, grayscale=False, resize=False, finalSize=None, subset=-1, normalize=True, maxValue=False, printImages=False, printHogs=False, printSlices=False):
+    #Window es una ventana única, con el formato (y,x). i.e.:(96,48)
+    return GetHogsFromPathWithWindows(pathToFolder, (window), grayscale, resize, finalSize, subset,, normalize, maxValue,printImages, printHogs, printSlices)
+def GetHogsFromPathWithWindows(pathToFolder, windows, grayscale=False, resize=False, finalSize=None, subset=-1, normalize=True, maxValue=False, printImages=False, printHogs=False, printSlices=False):
+    #Windows es una lista de ventanas, cada ventana tiene el formato (y,x). i.e.: (96,48)
+    hogs = []
+    i = 0
+    for(dirPath, dirName, fileNames in os.walk(pathToFolder)):
+        random.shuffle(fileNames)
+        for(f in fileNames):
+            image = LoadImageFromPath(JoinPaths(dirPath,f))
+            for( w in windows):
+                height = w[0]
+                width = w[1]
+                y = 0
+                while(y + height < image.shape(0)):
+                    x = 0
+                    while(x + width <imagen.shape(1)):
+                        img_cropped = CropImage(image,x,y,width,height)
+                        if(printSlices):
+                            PrintImage(img_cropped)
+                        image_hog = HogFromImage(img_cropped, grayscale, resize, finalSize, normalize, maxValue, printHogs)
+                        hogs.append(image_hog)
+                        x +=width
+                    y += height
+            if(printImages):
+                PrintImage(image)
+            i+=1
+            if(i == subset):
+                return hogs
+    return hogs
