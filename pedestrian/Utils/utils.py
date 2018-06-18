@@ -5,6 +5,9 @@ CONFIG = {
     },
     "IMAGE":{
         "FINAL_SIZE": (96,48)
+    },
+    "SVM": {
+        "C": 250
     }
 }
 import skimage.io
@@ -39,7 +42,7 @@ def PrintImage(image):#Imprime una imagen usando PyPlot
 def PrintImages(images, length=-1):#Imprime varias(todas o N) imagen usando PyPlot.
     if(length == -1):
         length = len(images)
-    for(i in images):
+    for i in images :
         plt.figure()
         plt.imshow(i)
         length -= 1
@@ -65,9 +68,9 @@ def HogFromImage(image, grayscale=False, resize=False, finalSize=None, normalize
 def GetHogsFromPath(pathToFolder, grayscale=False, resize=False, finalSize=None, subset=-1, normalize=True, maxValue=False, printImages=False, printHogs=False):
     hogs = []
     i = 0
-    for( dirPath, dirName, fileNames in os.walk(pathToFolder)):
+    for dirPath, dirName, fileNames in os.walk(pathToFolder):
         random.shuffle(fileNames)
-        for(f in fileNames):
+        for f in fileNames:
             image = LoadImageFromPath(JoinPaths(dirPath, f))
             if(printImages):
                 PrintImage(image)
@@ -82,7 +85,7 @@ def GetHogsFromList(images, grayscale=False, resize=False, finalSize=None, subse
     hogs = []
     i = 0
     random.shuffle(images)
-    for(image in images):
+    for image in images :
         if(printImages):
             PrintImage(image)
         image_hog = HogFromImage(image, grayscale, resize, finalSize, normalize, maxValue, printHogs)
@@ -93,16 +96,16 @@ def GetHogsFromList(images, grayscale=False, resize=False, finalSize=None, subse
     return hogs
 def GetHogsFromPathWithWindow(pathToFolder, window, grayscale=False, resize=False, finalSize=None, subset=-1, normalize=True, maxValue=False, printImages=False, printHogs=False, printSlices=False):
     #Window es una ventana única, con el formato (y,x). i.e.:(96,48)
-    return GetHogsFromPathWithWindows(pathToFolder, (window), grayscale, resize, finalSize, subset,, normalize, maxValue,printImages, printHogs, printSlices)
+    return GetHogsFromPathWithWindows(pathToFolder, (window), grayscale, resize, finalSize, subset, normalize, maxValue,printImages, printHogs, printSlices)
 def GetHogsFromPathWithWindows(pathToFolder, windows, grayscale=False, resize=False, finalSize=None, subset=-1, normalize=True, maxValue=False, printImages=False, printHogs=False, printSlices=False):
     #Windows es una lista de ventanas, cada ventana tiene el formato (y,x). i.e.: (96,48)
     hogs = []
     i = 0
-    for(dirPath, dirName, fileNames in os.walk(pathToFolder)):
+    for dirPath, dirName, fileNames in os.walk(pathToFolder):
         random.shuffle(fileNames)
-        for(f in fileNames):
+        for f in fileNames:
             image = LoadImageFromPath(JoinPaths(dirPath,f))
-            for( w in windows):
+            for w in windows:
                 height = w[0]
                 width = w[1]
                 y = 0
@@ -122,3 +125,17 @@ def GetHogsFromPathWithWindows(pathToFolder, windows, grayscale=False, resize=Fa
             if(i == subset):
                 return hogs
     return hogs
+#-----------------------------TRATAMIENTO DE H5PY ----------------------------
+def LoadH5PY(path):
+    return h5py.File(path, 'rw')
+def CreateDataset(h5pyFile, datasetName, dataset):
+    h5pyFile.create_dataset(datasetName, data=dataset)
+def GetDataset(h5pyFile, datasetName):
+    return h5pyFile[datasetName][:]
+#-----------------------------TRATAMIENTO DE SVM -----------------------------
+def LoadCheckpoint(path):
+    return joblib.load(path)
+def SaveCheckpoint(classifier_svm, path):
+    joblib.dump(classifier_svm, path)
+def CreateLinearSVM():
+    return svm.LinearSVC(C=CONFIG["SVM"]["C"])
