@@ -3,7 +3,9 @@ import skimage.io
 from matplotlib import patches
 from sklearn.externals import joblib
 from skimage.feature import hog
+from sklearn.preprocessing import normalize
 import numpy as np
+from skimage.color import rgb2gray
 import matplotlib.pyplot as plt
 import os
 import random
@@ -19,14 +21,14 @@ SLIDING_WINDOW_STRIDE = (300, 150)  # Stride de la ventana deslizante (heigth, w
 DRAW_SLIDING_WINDOW = False  # En True si se quiere graficar en la imagen la ventrana deslizante
 DRAW_PEDRESTRIAN_BOUNDING_BOX = True  # En True si se quiere graficar los bounding boxes de los peatones
 SHOW_IMG = True  # Mostar la imagen con los rectangulos dibujados
-ASK_FOR_HNM = False  # Preguntar para hacer Hard Negative Mining
-DO_HNM = False  # Si esta en True hace directamente HNM sin preguntar (ignora el parametro de arriba)
-TEST_SUBSET_SIZE = 55  # Cantidad de imagenes a procesar para la deteccion. 0 si se quieren procesar todas
+DO_HNM = False  # Si esta en True hace directamente HNM sin preguntar (ignora el parametro de abajo)
+TEST_SUBSET_SIZE = 33  # Cantidad de imagenes a procesar para la deteccion. 0 si se quieren procesar todas
 
 # HNM
 HDF5_PATH = '/home/genaro/PycharmProjects/checkpoints_proyecto2018/datasets.h5'  # Path donde se guarda los hogs en HDF5
 CHECKPOINT_PATH = '/home/genaro/PycharmProjects/checkpoints_proyecto2018/svmCheckpoint.pkl'  # Path donde se guarda el SVM ya entrena
 IOU_limit = 0.4  # IOU Limite maximo
+HNM_CICLE_COUNT = 0  # Cantidad de imagenes que se quieren procesar antes de hacer HNM. 0 Para esperar a todas (mejor performance pero quizas arroja problemas de memoria)
 
 # INRIA
 INRIA_ROOT_FOLDER = '/home/genaro/Descargas/'
@@ -89,7 +91,7 @@ def get_mean_sliding_window_parameters(min_width, min_height, max_width, max_hei
     return mean_width, mean_height
 
 
-def detect_pedrestrian(img, pedestrians_bounding_boxes, sliding_window_parameters, classifier_svm, grayscale=False):
+def detect_pedrestrian(img, pedestrians_bounding_boxes, sliding_window_parameters, classifier_svm, grayscale=False, must_normalize=True):
     """A partir de la imagen pasada por parametro se realiza una
     ventana deslizante y se dibujan las areas donde fue detectada una persona"""
     height, width = len(img), len(img[1])
@@ -103,6 +105,15 @@ def detect_pedrestrian(img, pedestrians_bounding_boxes, sliding_window_parameter
     # Datos de precision, recall, etc
     total_pedestrian = len(pedestrians_bounding_boxes)
     pedrestrian_predected = pedrestrian_success = 0
+
+    # Paso a escalas de grises
+    if grayscale:
+        img = grayscaled_img(img)  # Los hogs solo se pueden calcular sobre escala de grises
+
+    # Normalizo
+    if must_normalize:
+        img = normalize_img(img)
+
     # Comienzo a correr la ventana deslizante
     while y < height:
         x = 0
@@ -116,8 +127,6 @@ def detect_pedrestrian(img, pedestrians_bounding_boxes, sliding_window_parameter
                 sub_img = img[y:y + block_heigth, x:x + block_width]
             finally:
                 sub_img = resize(sub_img)
-                if grayscale:
-                    sub_img = grayscaled_img(sub_img)  # Los hogs solo se pueden calcular sobre escala de grises
 
             sub_img_hog = hog(sub_img, block_norm='L2-Hys', transform_sqrt=True)
             predictions = classifier_svm.predict([sub_img_hog])
@@ -147,15 +156,12 @@ def detect_pedrestrian(img, pedestrians_bounding_boxes, sliding_window_parameter
                     ]
                     # Calculo el IOU
                     iou = get_iou(img_box, box_to_iou)
+                    print("iou", iou)
 
-                    print(iou)
                     # Si es menor que el limite de IOU seteado, lo considero para agregar al HNM
                     if iou < IOU_limit:
                         must_be_added = True
                     else:
-                        print("Peaton encontrado", iou)
-                        print(img_box)
-                        print(box_to_iou)
                         # Grafico en verde los peatones correctamente detectados
                         # draw_rectangle(x, y, block_width, block_heigth, '#008744')
                         draw_rectangle(x, y, block_width, block_heigth, 'blue')
@@ -176,18 +182,7 @@ def detect_pedrestrian(img, pedestrians_bounding_boxes, sliding_window_parameter
             "Bounding boxes en negro. Ventana deslizante en amarillo. Falsos positivos en Rojo. Positivos en Verde")
         plt.show()  # Muestro la imagen
 
-    if not hogs_to_hard_mining:
-        print("No hay falsos positivos para hacer Hard Negative Mining")
-    else:
-        # Si hay datos para hacer Hard Negative Mining...
-        if DO_HNM:
-            do_hard_negative_mining(hogs_to_hard_mining, classifier_svm)
-        elif ASK_FOR_HNM:
-            should_do_hnm = input("Desea hacer Hard Negative Mining con las imagenes remarcadas en rojo?[y/N]")
-            if should_do_hnm == 'y':
-                do_hard_negative_mining(hogs_to_hard_mining, classifier_svm)
-
-    return total_pedestrian, pedrestrian_predected, pedrestrian_success
+    return hogs_to_hard_mining, total_pedestrian, pedrestrian_predected, pedrestrian_success
 
 
 def get_inria_test_data():
@@ -373,13 +368,18 @@ def range_overlap(a_min, a_max, b_min, b_max):
 
 def grayscaled_img(img):
     """Devuelve la imagen en escala de grises"""
-    return np.mean(img, axis=2)
+    return rgb2gray(img)
 
 
 def save_img(img, folder, img_filename):
     """Guarda la imagen en el directorio final"""
     img_path = os.path.join(folder, img_filename)
     skimage.io.imsave(img_path, img)
+
+
+def normalize_img(img):
+    """Normaliza la imagen con el maximo valor usando sklearn"""
+    return normalize(img, 'max')
 
 
 def main():
@@ -396,18 +396,34 @@ def main():
 
     # Datos finales
     total_pedestrians = pedestrian_predected = pedestrian_success = 0
+    hogs_to_hnm = []
+    hnm_count = 0
     for img, bounding_boxes, sliding_window_parameters in test_imgs:
         if TEST_SUBSET_SIZE and i > TEST_SUBSET_SIZE:
             break
 
-        cant_pedestrian, cant_pedrestrian_predected, cant_pedrestrian_success = detect_pedrestrian(img, bounding_boxes,
+        hogs_to_hnm_aux, cant_pedestrian, cant_pedrestrian_predected, cant_pedrestrian_success = detect_pedrestrian(img, bounding_boxes,
                                                                                                    sliding_window_parameters,
                                                                                                    classifier_svm)
+        hnm_count += 1
+        hogs_to_hnm += hogs_to_hnm_aux
+        if DO_HNM and HNM_CICLE_COUNT and hnm_count == HNM_CICLE_COUNT:
+            do_hard_negative_mining(hogs_to_hnm, classifier_svm)
+
+            # Reseteo los datos
+            hnm_count = 0
+            hogs_to_hnm = []
+
         total_pedestrians += cant_pedestrian
         pedestrian_predected += cant_pedrestrian_predected
         pedestrian_success += cant_pedrestrian_success
 
         i += 1
+
+    # Si no se especifico a la variable HNM_CICLE_COUNT hago HNM con todos
+    # los hogs almacenados
+    if DO_HNM and not HNM_CICLE_COUNT:
+        do_hard_negative_mining(hogs_to_hnm, classifier_svm)
 
     if pedestrian_predected:
         print("Precision --> {} / {} = {}".format(pedestrian_success, pedestrian_predected,
