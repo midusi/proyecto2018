@@ -20,10 +20,14 @@ HDF5_PATH = '/home/genaro/PycharmProjects/checkpoints_proyecto2018/datasets.h5' 
 CHECKPOINT_PATH = '/home/genaro/PycharmProjects/checkpoints_proyecto2018/svmCheckpoint.pkl' # Path donde se guarda el SVM ya entrenado
 PREDICT_IMGS_PATH = './imgs/'  # Path de la carpeta de donde sacara imagenes propias para predecir
 
-FINAL_SIZE = [96, 48]
+# Tamanios a los que se va a hacer resize de las imagenes
+FINAL_SIZES = [
+    [128, 64],
+    [96, 48]
+]
 TRAIN = False  # Setear en False cuando se quiera usar el checkpoint y ahorrarse el training
 LOAD_FROM_IMGS = False  # Setear en False si se quiere levantar x, y desde HDF5
-SUBSET_SIZE = 3000  # Tamaño del dataset a parsear, si se setea en 0 se carga el dataset completo
+SUBSET_SIZE = 4500  # Tamaño del dataset a parsear, si se setea en 0 se carga el dataset completo
 VISUALIZE_IMG = False  # Mostrar las imagenes que van a entrar al HOG()
 
 # Datos de test
@@ -43,7 +47,7 @@ def print_mulitple(list_of_images):
     plt.show()
 
 
-def get_hog_from_path(path, grayscale=False, must_resize=False, must_normalize=True):
+def get_hog_from_path(path, must_grayscale=False, must_resize=True, must_normalize=True):
     """Genera el HOG de todas las imagenes que se encuentran
     dentro de la carpeta pasada por parametro"""
     hogs = []
@@ -56,27 +60,60 @@ def get_hog_from_path(path, grayscale=False, must_resize=False, must_normalize=T
         for filename in filenames:
             img_path = os.path.join(dirpath, filename)
             img = skimage.io.imread(img_path)  # Cargo la imagen
-            # img = np.array(img)  # Convierto en arreglo numpy
-            # print(img)
-
-            # Si pidieron hacer resize o pasar a blanco y negro lo hago
-            if must_resize:
-                img = resize(img)
-            if grayscale:
-                img = grayscaled_img(img)
-
-            # Normalizo la imagen
-            if must_normalize:
-                img = normalize_img(img)
-
             if VISUALIZE_IMG:
+                print("Antes del preprocesamiento")
                 print(img_path)
                 print(img)
+                print("Shape", img.shape)
+                flatten = img.flatten()
+                print("Min", min(flatten), "Max", max(flatten))
                 print_image(img)
-            img_hog = hog(img, block_norm='L2-Hys', transform_sqrt=True)
+
+            # Si pidieron hacer resize...
+            if must_resize:
+                # is_max_size = True
+                img_hog = []
+                for img_size in FINAL_SIZES:
+
+                    img = resize(img, img_size)
+                    img_hog_aux = get_img_hog(img, must_grayscale=must_grayscale, must_normalize=must_normalize)
+                    img_hog = np.concatenate([img_hog, img_hog_aux])
+                    # if is_max_size:
+                    #     is_max_size = False
+                    # else:
+                    #     img_hog = np.pad(img_hog, (0, 3564), 'constant', constant_values=0)
+                    # hogs.append(img_hog)
+            else:
+                img_hog = get_img_hog(img, must_grayscale=must_grayscale, must_normalize=must_normalize)
             hogs.append(img_hog)
 
+    # print("hogs --> ")
+    # hogs = np.array(hogs)
+    # print(hogs[0].shape)
+    # print(hogs.shape)
+    # exit(0)
     return hogs, size  # Devuelvo lista de hogs y el tamaño total de elementos generados
+
+
+def get_img_hog(img, must_grayscale=True, must_normalize=True):
+    """Obtiene el HOG de una imagen con algun preprocesamiento
+    solicitado"""
+    if must_grayscale:
+        img = grayscaled_img(img)
+
+    # Normalizo la imagen
+    if must_normalize:
+        img = normalize_img(img)
+
+    if VISUALIZE_IMG:
+        print("Despues del preprocesamiento")
+        print(img)
+        print("Shape", img.shape)
+        flatten = img.flatten()
+        print("Min", min(flatten), "Max", max(flatten))
+        print_image(img)
+
+    return hog(img, block_norm='L2-Hys', transform_sqrt=True)
 
 
 def load_training_data():
@@ -84,7 +121,7 @@ def load_training_data():
     seteados arriba"""
     positives = negatives = 0  # Para dar informacion de cantidad de ejemplos positivos y negativos
     # Leo los de Daimler negativos
-    daimler_neg_hogs, size = get_hog_from_path(DAIMLER_NON_PEDESTRIAN_PATH, grayscale=True)
+    daimler_neg_hogs, size = get_hog_from_path(DAIMLER_NON_PEDESTRIAN_PATH, must_grayscale=True)
     x = daimler_neg_hogs  # Arreglo que almacenara los HOGS de cada imagen
     y = np.zeros(size)
 
@@ -92,7 +129,7 @@ def load_training_data():
     negatives += size
 
     # Leo los de Daimler positivos
-    daimler_pos_hogs, size = get_hog_from_path(DAIMLER_PEDESTRIAN_PATH, grayscale=True)
+    daimler_pos_hogs, size = get_hog_from_path(DAIMLER_PEDESTRIAN_PATH, must_grayscale=True)
     x += daimler_pos_hogs
     y = np.append(y, np.ones(size))
 
@@ -101,7 +138,7 @@ def load_training_data():
 
     # Leo los de INRIA negativos
     # NOTA: escalo a gris estos negativos y positivos porque INRIA viene en RGB
-    inria_neg_hogs, size = get_hog_from_path(INRIA_NON_PEDESTRIAN_PATH, grayscale=True)
+    inria_neg_hogs, size = get_hog_from_path(INRIA_NON_PEDESTRIAN_PATH, must_grayscale=True)
     x += inria_neg_hogs
     y = np.append(y, np.zeros(size))
 
@@ -109,7 +146,7 @@ def load_training_data():
     negatives += size
 
     # Leo los de INRIA positivos
-    inria_pos_hogs, size = get_hog_from_path(INRIA_PEDESTRIAN_PATH, grayscale=True)
+    inria_pos_hogs, size = get_hog_from_path(INRIA_PEDESTRIAN_PATH, must_grayscale=True)
     x += inria_pos_hogs
     y = np.append(y, np.ones(size))
 
@@ -117,12 +154,22 @@ def load_training_data():
     positives += size
 
     print("Entrenando en total con {} ejemplos positivos y {} ejemplos negativos".format(positives, negatives))
+
+    # print(x)
+    x = np.array(x)
+    # print(x)
+    print("------------------------")
+    print("x shape --> ", x.shape)
+    print("------------------------")
+    print("y shape", y.shape, "| y len --> ", len(y))
+    print("------------------------")
+    # exit(0)
     return x, y
 
 
-def resize(img):
+def resize(img, size):
     """Devuelve la imagen con el tamaño modificado"""
-    return skimage.transform.resize(img, FINAL_SIZE)
+    return skimage.transform.resize(img, size)
 
 
 def print_image(img):
@@ -147,7 +194,7 @@ def load_predict_img(img_name):
     img_path = os.path.join(PREDICT_IMGS_PATH, img_name)
     img = skimage.io.imread(img_path)  # Cargo la imagen
     img = grayscaled_img(img)
-    img = resize(img)
+    img = resize(img, FINAL_SIZES[0])
     return hog(img, block_norm='L2-Hys', transform_sqrt=True)
 
 
@@ -178,12 +225,12 @@ def get_hdf5_datasets():
 def load_test_data():
     """Toma los datos de test usando los paths seteados anteriormente"""
     # Leo los test de INRIA negativos
-    inria_neg_hogs, size = get_hog_from_path(TEST_DATA_NEG_PATH, grayscale=True, must_resize=True)
+    inria_neg_hogs, size = get_hog_from_path(TEST_DATA_NEG_PATH, must_grayscale=True)
     x = inria_neg_hogs
     y = np.zeros(size)
 
     # Leo los test de INRIA positivos
-    inria_pos_hogs, size = get_hog_from_path(TEST_DATA_POS_PATH, grayscale=True, must_resize=True)
+    inria_pos_hogs, size = get_hog_from_path(TEST_DATA_POS_PATH, must_grayscale=True)
     x += inria_pos_hogs
     y = np.append(y, np.ones(size))
 
