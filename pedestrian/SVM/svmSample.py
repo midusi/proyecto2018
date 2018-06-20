@@ -22,17 +22,17 @@ PREDICT_IMGS_PATH = './imgs/'  # Path de la carpeta de donde sacara imagenes pro
 
 # Tamanios a los que se va a hacer resize de las imagenes
 FINAL_SIZES = [
-    [128, 64],
+    # [128, 64]
     [96, 48]
 ]
-TRAIN = False  # Setear en False cuando se quiera usar el checkpoint y ahorrarse el training
-LOAD_FROM_IMGS = False  # Setear en False si se quiere levantar x, y desde HDF5
-SUBSET_SIZE = 4500  # Tamaño del dataset a parsear, si se setea en 0 se carga el dataset completo
+TRAIN = True  # Setear en False cuando se quiera usar el checkpoint y ahorrarse el training
+LOAD_FROM_IMGS = True  # Setear en False si se quiere levantar x, y desde HDF5
+SUBSET_SIZE = 0  # Tamaño del dataset a parsear, si se setea en 0 se carga el dataset completo
 VISUALIZE_IMG = False  # Mostrar las imagenes que van a entrar al HOG()
 
 # Datos de test
 TEST_DATA = True  # Testear las imagenes de los path de abajo
-USE_TRAINING_AS_TEST_DATA = False  # Con True usa los datos de Training como test. False para usar las rutas de abajo
+USE_TRAINING_AS_TEST_DATA = True  # Con True usa los datos de Training como test. False para usar las rutas de abajo
 
 # Si USE_TRAINING_AS_TEST_DATA esta en True estos parametros se ignoran
 TEST_DATA_POS_PATH = '/home/genaro/Descargas/PedCut2013_SegmentationDataset/data/testData/left_images'
@@ -78,11 +78,6 @@ def get_hog_from_path(path, must_grayscale=False, must_resize=True, must_normali
                     img = resize(img, img_size)
                     img_hog_aux = get_img_hog(img, must_grayscale=must_grayscale, must_normalize=must_normalize)
                     img_hog = np.concatenate([img_hog, img_hog_aux])
-                    # if is_max_size:
-                    #     is_max_size = False
-                    # else:
-                    #     img_hog = np.pad(img_hog, (0, 3564), 'constant', constant_values=0)
-                    # hogs.append(img_hog)
             else:
                 img_hog = get_img_hog(img, must_grayscale=must_grayscale, must_normalize=must_normalize)
             hogs.append(img_hog)

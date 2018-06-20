@@ -1,5 +1,6 @@
 import skimage.io
 import skimage.transform
+from sklearn.preprocessing import normalize
 from sklearn import svm
 from sklearn.externals import joblib
 from skimage.feature import hog
@@ -21,6 +22,7 @@ CONFIG = {
         "C": 250
     }
 }
+
 
 # ---------------TRATAMIENTO DE ARCHIVOS--------------------
 
@@ -59,6 +61,11 @@ def normalize_image(image, maxValue=False):  # Normaliza la imagen entre 0 y max
     isFloat = type(image[0][0]) is float and image[0][
         0] < 1  # Me fijo si la imagen esta normalizada entre 0 y 1, tomando el primer pixel
     return image / (1 if isFloat else 255)
+
+
+def normalize_image_max(image):
+    """Normaliza la imagen con el maximo valor usando sklearn"""
+    return normalize(image, 'max')
 
 
 def print_image(image):  # Imprime una imagen usando PyPlot
@@ -105,6 +112,38 @@ def generate_sub_samples(img, original_img_path, folder_dest):
         y += block_heigth
 
 
+def get_pyramid(image, scale=1.5, minSize=(30, 30)):
+    """Devuelve una lista de escalas diferentes para la imagen pasada, fuente:
+    https://www.pyimagesearch.com/2015/03/16/image-pyramids-with-python-and-opencv/"""
+    # yield the original image
+    yield image
+
+    # keep looping over the pyramid
+    while True:
+        # compute the new dimensions of the image and resize it
+        w = int(image.shape[1] / scale)
+        h = int(image.shape[0] / scale)
+        image = resize(image, [h, w])
+
+        # if the resized image does not meet the supplied minimum
+        # size, then stop constructing the pyramid
+        if image.shape[0] < minSize[1] or image.shape[1] < minSize[0]:
+            break
+
+        # yield the next image in the pyramid
+        yield image
+
+
+def get_sliding_window(image, stepSize, windowSize):
+    """Devuelve las ventanas deslizantes de la imagen, fuente:
+    https://www.pyimagesearch.com/2015/03/23/sliding-windows-for-object-detection-with-python-and-opencv/"""
+    # slide a window across the image
+    for y in range(0, image.shape[0], stepSize[0]):
+        for x in range(0, image.shape[1], stepSize[1]):
+            # yield the current window
+            yield (x, y, image[y:y + windowSize[1], x:x + windowSize[0]])
+
+
 # ------------------TRATAMIENTO DE PATHS---------------------
 
 
@@ -115,8 +154,8 @@ def join_paths(folder, fil):
 # ------------------TRATAMIENTO DE HOGS----------------------
 
 
-def hog_from_image(image, grayscale=False, resize=False, finalSize=None, normalize=True, maxValue=False,
-                 printHogs=False):  # Devuelve el HOG de una imagen
+def get_hog_from_image(image, grayscale=False, resize=False, finalSize=None, normalize=True, maxValue=False,
+                   printHogs=False):  # Devuelve el HOG de una imagen
     # Si resize es True, prueba usar finalSize, si finalSize es None, usa la configuración por default definida arriba
     if grayscale:
         image = to_grayscale(image)
@@ -131,7 +170,7 @@ def hog_from_image(image, grayscale=False, resize=False, finalSize=None, normali
 
 
 def get_hogs_from_path(pathToFolder, grayscale=False, resize=False, finalSize=None, subset=-1, normalize=True,
-                    maxValue=False, printImages=False, printHogs=False):
+                       maxValue=False, printImages=False, printHogs=False):
     hogs = []
     i = 0
     for dirPath, dirName, fileNames in os.walk(pathToFolder):
@@ -140,7 +179,7 @@ def get_hogs_from_path(pathToFolder, grayscale=False, resize=False, finalSize=No
             image = load_image_from_path(join_paths(dirPath, f))
             if printImages:
                 print_image(image)
-            image_hog = hog_from_image(image, grayscale, resize, finalSize, normalize, maxValue, printHogs)
+            image_hog = get_hog_from_image(image, grayscale, resize, finalSize, normalize, maxValue, printHogs)
             hogs.append(image_hog)
             i += 1
             if i == subset:
@@ -150,13 +189,13 @@ def get_hogs_from_path(pathToFolder, grayscale=False, resize=False, finalSize=No
 
 
 def get_hogs_from_list(images, grayscale=False, resize=False, finalSize=None, subset=-1, normalize=True, maxValue=False,
-                    printImages=False, printHogs=False):
+                       printImages=False, printHogs=False):
     hogs = []
     i = 0
     for image in images:
         if printImages:
             print_image(image)
-        image_hog = hog_from_image(image, grayscale, resize, finalSize, normalize, maxValue, printHogs)
+        image_hog = get_hog_from_image(image, grayscale, resize, finalSize, normalize, maxValue, printHogs)
         hogs.append(image_hog)
         i += 1
         if i == subset:
@@ -165,14 +204,17 @@ def get_hogs_from_list(images, grayscale=False, resize=False, finalSize=None, su
 
 
 def get_hogs_from_path_with_window(pathToFolder, window, grayscale=False, resize=False, finalSize=None, subset=-1,
-                                   normalize=True, maxValue=False, printImages=False, printHogs=False, printSlices=False):
+                                   normalize=True, maxValue=False, printImages=False, printHogs=False,
+                                   printSlices=False):
     # Window es una ventana única, con el formato (y,x). i.e.:(96,48)
-    return get_hogs_from_path_with_windows(pathToFolder, window, grayscale, resize, finalSize, subset, normalize, maxValue,
+    return get_hogs_from_path_with_windows(pathToFolder, window, grayscale, resize, finalSize, subset, normalize,
+                                           maxValue,
                                            printImages, printHogs, printSlices)
 
 
 def get_hogs_from_path_with_windows(pathToFolder, windows, grayscale=False, resize=False, finalSize=None, subset=-1,
-                                    normalize=True, maxValue=False, printImages=False, printHogs=False, printSlices=False):
+                                    normalize=True, maxValue=False, printImages=False, printHogs=False,
+                                    printSlices=False):
     # Windows es una lista de ventanas, cada ventana tiene el formato (y,x). i.e.: (96,48)
     hogs = []
     i = 0
@@ -190,8 +232,8 @@ def get_hogs_from_path_with_windows(pathToFolder, windows, grayscale=False, resi
                         img_cropped = crop_image(image, x, y, width, height)
                         if printSlices:
                             print_image(img_cropped)
-                        image_hog = hog_from_image(img_cropped, grayscale, resize, finalSize, normalize, maxValue,
-                                                 printHogs)
+                        image_hog = get_hog_from_image(img_cropped, grayscale, resize, finalSize, normalize, maxValue,
+                                                   printHogs)
                         hogs.append(image_hog)
                         x += width
                     y += height

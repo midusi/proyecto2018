@@ -19,16 +19,16 @@ FINAL_SIZE = (96, 48)  # Tamaño de la imagen que vamos a manejar
 SLIDING_WINDOW_SIZE = [500, 400]  # Tamaño de la ventana deslizante (heigth, width)
 SLIDING_WINDOW_STRIDE = (300, 150)  # Stride de la ventana deslizante (heigth, width)
 DRAW_SLIDING_WINDOW = False  # En True si se quiere graficar en la imagen la ventrana deslizante
-DRAW_PEDRESTRIAN_BOUNDING_BOX = True  # En True si se quiere graficar los bounding boxes de los peatones
-SHOW_IMG = True  # Mostar la imagen con los rectangulos dibujados
-DO_HNM = False  # Si esta en True hace directamente HNM sin preguntar (ignora el parametro de abajo)
-TEST_SUBSET_SIZE = 33  # Cantidad de imagenes a procesar para la deteccion. 0 si se quieren procesar todas
+DRAW_PEDRESTRIAN_BOUNDING_BOX = False  # En True si se quiere graficar los bounding boxes de los peatones
+SHOW_IMG = False  # Mostar la imagen con los rectangulos dibujados
+TEST_SUBSET_SIZE = 0  # Cantidad de imagenes a procesar para la deteccion. 0 si se quieren procesar todas
 
 # HNM
 HDF5_PATH = '/home/genaro/PycharmProjects/checkpoints_proyecto2018/datasets.h5'  # Path donde se guarda los hogs en HDF5
 CHECKPOINT_PATH = '/home/genaro/PycharmProjects/checkpoints_proyecto2018/svmCheckpoint.pkl'  # Path donde se guarda el SVM ya entrena
 IOU_limit = 0.4  # IOU Limite maximo
-HNM_CICLE_COUNT = 0  # Cantidad de imagenes que se quieren procesar antes de hacer HNM. 0 Para esperar a todas (mejor performance pero quizas arroja problemas de memoria)
+DO_HNM = True  # Si esta en True hace HNM, caso no se hace HNM y se ignora el parametro de abajo
+HNM_CICLE_COUNT = 600  # Cantidad de imagenes que se quieren procesar antes de hacer HNM. 0 Para esperar a todas (mejor performance pero quizas arroja problemas de memoria)
 
 # INRIA
 INRIA_ROOT_FOLDER = '/home/genaro/Descargas/'
@@ -98,7 +98,7 @@ def detect_pedrestrian(img, pedestrians_bounding_boxes, sliding_window_parameter
     # block_heigth, block_width = SLIDING_WINDOW_SIZE
     block_width, block_heigth = sliding_window_parameters
     y = 0
-    plt.imshow(img)
+    plt.imshow(img, cmap='gray')
     hogs_to_hard_mining = []
     # stride_y, stride_x = SLIDING_WINDOW_STRIDE
     stride_y, stride_x = int(SLIDING_WINDOW_STRIDE[0] / 2), int(SLIDING_WINDOW_STRIDE[1] / 2)
@@ -156,7 +156,7 @@ def detect_pedrestrian(img, pedestrians_bounding_boxes, sliding_window_parameter
                     ]
                     # Calculo el IOU
                     iou = get_iou(img_box, box_to_iou)
-                    print("iou", iou)
+                    # print("iou", iou)
 
                     # Si es menor que el limite de IOU seteado, lo considero para agregar al HNM
                     if iou < IOU_limit:
@@ -322,8 +322,15 @@ def resize(img):
 def print_image(img):
     """No va a funcionar correctamente hasta que no se normalice la imagen a una
     escala aceptable, ya que el formato pgm va de 0 a 4096"""
-    plt.imshow(img)
+    plt.imshow(img, cmap="gray")
     plt.show()
+
+
+def print_image2(img):
+    """No va a funcionar correctamente hasta que no se normalice la imagen a una
+    escala aceptable, ya que el formato pgm va de 0 a 4096"""
+    skimage.io.imshow(img)
+    # plt.show()
 
 
 def get_iou(box_a, box_b):
