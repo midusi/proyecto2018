@@ -1,15 +1,3 @@
-CONFIG = {
-    "HOG": {
-        "BLOCK_NORM": "L2-Hys",
-        "VISUALIZE": True
-    },
-    "IMAGE": {
-        "FINAL_SIZE": (96, 48)
-    },
-    "SVM": {
-        "C": 250
-    }
-}
 import skimage.io
 import skimage.transform
 from sklearn import svm
@@ -23,10 +11,24 @@ import matplotlib.pyplot as plt
 import h5py
 import random
 
+CONFIG = {
+    "HOG": {
+        "BLOCK_NORM": "L2-Hys",
+        "VISUALIZE": True
+    },
+    "IMAGE": {
+        "FINAL_SIZE": (96, 48)
+    },
+    "SVM": {
+        "C": 250
+    }
+}
 
 # ---------------TRATAMIENTO DE IMAGENES--------------------
+
+
 def Resize(image, finalSize):  # Resize común y silvestre
-    return skimage.transform.resize(img, finalSize)
+    return skimage.transform.resize(image, finalSize)
 
 
 def CropImage(image, posX, posY, width, height):  # Corta la imagen dado un punto, ancho y aleatorio
@@ -66,11 +68,15 @@ def PrintImages(images, length=-1):  # Imprime varias(todas o N) imagen usando P
 
 
 # ------------------TRATAMIENTO DE PATHS---------------------
+
+
 def JoinPaths(folder, fil):
     return os.path.join(folder, fil)
 
 
 # ------------------TRATAMIENTO DE HOGS----------------------
+
+
 def HogFromImage(image, grayscale=False, resize=False, finalSize=None, normalize=True, maxValue=False,
                  printHogs=False):  # Devuelve el HOG de una imagen
     # Si resize es True, prueba usar finalSize, si finalSize es None, usa la configuración por default definida arriba
@@ -143,7 +149,7 @@ def GetHogsFromPathWithWindows(pathToFolder, windows, grayscale=False, resize=Fa
                 y = 0
                 while (y + height < image.shape(0)):
                     x = 0
-                    while (x + width < imagen.shape(1)):
+                    while (x + width < image.shape(1)):
                         img_cropped = CropImage(image, x, y, width, height)
                         if (printSlices):
                             PrintImage(img_cropped)
@@ -161,6 +167,8 @@ def GetHogsFromPathWithWindows(pathToFolder, windows, grayscale=False, resize=Fa
 
 
 # -----------------------------TRATAMIENTO DE H5PY ----------------------------
+
+
 def LoadH5PY(path):
     return h5py.File(path, 'rw')
 
@@ -174,6 +182,8 @@ def GetDataset(h5pyFile, datasetName):
 
 
 # -----------------------------TRATAMIENTO DE SVM -----------------------------
+
+
 def LoadCheckpoint(path):
     return joblib.load(path)
 
