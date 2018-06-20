@@ -68,13 +68,13 @@ def print_image(image):  # Imprime una imagen usando PyPlot
 
 
 def print_images(images, length=-1):  # Imprime varias(todas o N) imagen usando PyPlot.
-    if (length == -1):
+    if length == -1:
         length = len(images)
     for i in images:
         plt.figure()
         plt.imshow(i)
         length -= 1
-        if (length == 0):
+        if length == 0:
             break
     plt.show()
 
@@ -118,14 +118,14 @@ def join_paths(folder, fil):
 def hog_from_image(image, grayscale=False, resize=False, finalSize=None, normalize=True, maxValue=False,
                  printHogs=False):  # Devuelve el HOG de una imagen
     # Si resize es True, prueba usar finalSize, si finalSize es None, usa la configuración por default definida arriba
-    if (grayscale):
+    if grayscale:
         image = to_grayscale(image)
-    if (resize):
+    if resize:
         image = resize(image, finalSize if (finalSize != None) else CONFIG["IMAGE"]["FINAL_SIZE"])
-    if (normalize):
+    if normalize:
         image = normalize(image, maxValue)
     h, i = hog(image, block_norm=CONFIG["HOG"]["BLOCK_NORM"], transform_sqrt=True, visualise=CONFIG["HOG"]["VISUALIZE"])
-    if (printHogs):
+    if printHogs:
         print_image(i)
     return h
 
@@ -138,12 +138,12 @@ def get_hogs_from_path(pathToFolder, grayscale=False, resize=False, finalSize=No
         random.shuffle(fileNames)
         for f in fileNames:
             image = load_image_from_path(join_paths(dirPath, f))
-            if (printImages):
+            if printImages:
                 print_image(image)
             image_hog = hog_from_image(image, grayscale, resize, finalSize, normalize, maxValue, printHogs)
             hogs.append(image_hog)
             i += 1
-            if (i == subset):
+            if i == subset:
                 return hogs
 
     return hogs
@@ -153,14 +153,13 @@ def get_hogs_from_list(images, grayscale=False, resize=False, finalSize=None, su
                     printImages=False, printHogs=False):
     hogs = []
     i = 0
-    random.shuffle(images)
     for image in images:
-        if (printImages):
+        if printImages:
             print_image(image)
         image_hog = hog_from_image(image, grayscale, resize, finalSize, normalize, maxValue, printHogs)
         hogs.append(image_hog)
         i += 1
-        if (i == subset):
+        if i == subset:
             return hogs
     return hogs
 
@@ -168,7 +167,7 @@ def get_hogs_from_list(images, grayscale=False, resize=False, finalSize=None, su
 def get_hogs_from_path_with_window(pathToFolder, window, grayscale=False, resize=False, finalSize=None, subset=-1,
                                    normalize=True, maxValue=False, printImages=False, printHogs=False, printSlices=False):
     # Window es una ventana única, con el formato (y,x). i.e.:(96,48)
-    return get_hogs_from_path_with_windows(pathToFolder, (window), grayscale, resize, finalSize, subset, normalize, maxValue,
+    return get_hogs_from_path_with_windows(pathToFolder, window, grayscale, resize, finalSize, subset, normalize, maxValue,
                                            printImages, printHogs, printSlices)
 
 
@@ -185,21 +184,21 @@ def get_hogs_from_path_with_windows(pathToFolder, windows, grayscale=False, resi
                 height = w[0]
                 width = w[1]
                 y = 0
-                while (y + height < image.shape(0)):
+                while y + height < image.shape(0):
                     x = 0
-                    while (x + width < image.shape(1)):
+                    while x + width < image.shape(1):
                         img_cropped = crop_image(image, x, y, width, height)
-                        if (printSlices):
+                        if printSlices:
                             print_image(img_cropped)
                         image_hog = hog_from_image(img_cropped, grayscale, resize, finalSize, normalize, maxValue,
                                                  printHogs)
                         hogs.append(image_hog)
                         x += width
                     y += height
-            if (printImages):
+            if printImages:
                 print_image(image)
             i += 1
-            if (i == subset):
+            if i == subset:
                 return hogs
     return hogs
 
