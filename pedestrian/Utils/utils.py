@@ -5,8 +5,6 @@ from sklearn.externals import joblib
 from skimage.feature import hog
 from skimage.color import rgb2gray
 import os
-import random
-import numpy as np
 import matplotlib.pyplot as plt
 import h5py
 import random
@@ -24,38 +22,52 @@ CONFIG = {
     }
 }
 
+# ---------------TRATAMIENTO DE ARCHIVOS--------------------
+
+
+def get_filename(path):
+    """Devuelve el nombre del archivo, INCLUIDA la extension"""
+    return path.split('/')[-1]
+
+
+def get_basename(path):
+    """Devuelve el nombre del archivo SIN extension y la extension por separado"""
+    filename = get_filename(path).split('.')
+    return filename[0], filename[1]
+
+
 # ---------------TRATAMIENTO DE IMAGENES--------------------
 
 
-def Resize(image, finalSize):  # Resize común y silvestre
+def resize(image, finalSize):  # Resize común y silvestre
     return skimage.transform.resize(image, finalSize)
 
 
-def CropImage(image, posX, posY, width, height):  # Corta la imagen dado un punto, ancho y aleatorio
+def crop_image(image, posX, posY, width, height):  # Corta la imagen dado un punto, ancho y aleatorio
     return image[posY:posY + height, posX:posX + width]
 
 
-def ToGrayscale(image):  # Devuelve la imagen en escala de grises
+def to_grayscale(image):  # Devuelve la imagen en escala de grises
     return rgb2gray(image)
 
 
-def LoadImageFromPath(path):  # Carga una imagen dado un PATH
+def load_image_from_path(path):  # Carga una imagen dado un PATH
     return skimage.io.imread(path)
 
 
-def NormalizeImage(image, maxValue=False):  # Normaliza la imagen entre 0 y maxValue o 255
+def normalize_image(image, maxValue=False):  # Normaliza la imagen entre 0 y maxValue o 255
     isFloat = type(image[0][0]) is float and image[0][
         0] < 1  # Me fijo si la imagen esta normalizada entre 0 y 1, tomando el primer pixel
     return image / (1 if isFloat else 255)
 
 
-def PrintImage(image):  # Imprime una imagen usando PyPlot
+def print_image(image):  # Imprime una imagen usando PyPlot
     plt.figure()
     plt.imshow(image)
     plt.show()
 
 
-def PrintImages(images, length=-1):  # Imprime varias(todas o N) imagen usando PyPlot.
+def print_images(images, length=-1):  # Imprime varias(todas o N) imagen usando PyPlot.
     if (length == -1):
         length = len(images)
     for i in images:
@@ -67,42 +79,68 @@ def PrintImages(images, length=-1):  # Imprime varias(todas o N) imagen usando P
     plt.show()
 
 
+def save_img(img, dest_folder, filename):
+    """Guarda la imagen en el directorio final"""
+    img_path = os.path.join(dest_folder, filename)
+    skimage.io.imsave(img_path, img)
+
+
+def generate_sub_samples(img, original_img_path, folder_dest):
+    """A partir de la imagen pasada por parametro se generan sub imagenes"""
+    height, width = len(img), len(img[1])
+    block_heigth, block_width = int(height / 5), int(width / 5)
+    original_filename, extension = get_basename(original_img_path)
+    i = 0  # Contador de subimagenes
+    y = 0
+    while y < height:
+        x = 0
+        while x < width:
+            sub_img = img[y:y + block_heigth, x:x + block_width, :]  # Obtengo una subregion/subimagen
+            sub_img = resize(sub_img)
+            # Genero el nombre de la imagen a partir del nombre original
+            sub_img_filename = original_filename + '_' + str(i) + '.' + extension
+            save_img(sub_img, folder_dest, sub_img_filename)
+            x += block_width
+            i += 1
+        y += block_heigth
+
+
 # ------------------TRATAMIENTO DE PATHS---------------------
 
 
-def JoinPaths(folder, fil):
+def join_paths(folder, fil):
     return os.path.join(folder, fil)
 
 
 # ------------------TRATAMIENTO DE HOGS----------------------
 
 
-def HogFromImage(image, grayscale=False, resize=False, finalSize=None, normalize=True, maxValue=False,
+def hog_from_image(image, grayscale=False, resize=False, finalSize=None, normalize=True, maxValue=False,
                  printHogs=False):  # Devuelve el HOG de una imagen
     # Si resize es True, prueba usar finalSize, si finalSize es None, usa la configuración por default definida arriba
     if (grayscale):
-        image = ToGrayscale(image)
+        image = to_grayscale(image)
     if (resize):
-        image = Resize(image, finalSize if (finalSize != None) else CONFIG["IMAGE"]["FINAL_SIZE"])
+        image = resize(image, finalSize if (finalSize != None) else CONFIG["IMAGE"]["FINAL_SIZE"])
     if (normalize):
-        image = NormalizeImage(image, maxValue)
+        image = normalize(image, maxValue)
     h, i = hog(image, block_norm=CONFIG["HOG"]["BLOCK_NORM"], transform_sqrt=True, visualise=CONFIG["HOG"]["VISUALIZE"])
     if (printHogs):
-        PrintImage(i)
+        print_image(i)
     return h
 
 
-def GetHogsFromPath(pathToFolder, grayscale=False, resize=False, finalSize=None, subset=-1, normalize=True,
+def get_hogs_from_path(pathToFolder, grayscale=False, resize=False, finalSize=None, subset=-1, normalize=True,
                     maxValue=False, printImages=False, printHogs=False):
     hogs = []
     i = 0
     for dirPath, dirName, fileNames in os.walk(pathToFolder):
         random.shuffle(fileNames)
         for f in fileNames:
-            image = LoadImageFromPath(JoinPaths(dirPath, f))
+            image = load_image_from_path(join_paths(dirPath, f))
             if (printImages):
-                PrintImage(image)
-            image_hog = HogFromImage(image, grayscale, resize, finalSize, normalize, maxValue, printHogs)
+                print_image(image)
+            image_hog = hog_from_image(image, grayscale, resize, finalSize, normalize, maxValue, printHogs)
             hogs.append(image_hog)
             i += 1
             if (i == subset):
@@ -111,15 +149,15 @@ def GetHogsFromPath(pathToFolder, grayscale=False, resize=False, finalSize=None,
     return hogs
 
 
-def GetHogsFromList(images, grayscale=False, resize=False, finalSize=None, subset=-1, normalize=True, maxValue=False,
+def get_hogs_from_list(images, grayscale=False, resize=False, finalSize=None, subset=-1, normalize=True, maxValue=False,
                     printImages=False, printHogs=False):
     hogs = []
     i = 0
     random.shuffle(images)
     for image in images:
         if (printImages):
-            PrintImage(image)
-        image_hog = HogFromImage(image, grayscale, resize, finalSize, normalize, maxValue, printHogs)
+            print_image(image)
+        image_hog = hog_from_image(image, grayscale, resize, finalSize, normalize, maxValue, printHogs)
         hogs.append(image_hog)
         i += 1
         if (i == subset):
@@ -127,22 +165,22 @@ def GetHogsFromList(images, grayscale=False, resize=False, finalSize=None, subse
     return hogs
 
 
-def GetHogsFromPathWithWindow(pathToFolder, window, grayscale=False, resize=False, finalSize=None, subset=-1,
-                              normalize=True, maxValue=False, printImages=False, printHogs=False, printSlices=False):
+def get_hogs_from_path_with_window(pathToFolder, window, grayscale=False, resize=False, finalSize=None, subset=-1,
+                                   normalize=True, maxValue=False, printImages=False, printHogs=False, printSlices=False):
     # Window es una ventana única, con el formato (y,x). i.e.:(96,48)
-    return GetHogsFromPathWithWindows(pathToFolder, (window), grayscale, resize, finalSize, subset, normalize, maxValue,
-                                      printImages, printHogs, printSlices)
+    return get_hogs_from_path_with_windows(pathToFolder, (window), grayscale, resize, finalSize, subset, normalize, maxValue,
+                                           printImages, printHogs, printSlices)
 
 
-def GetHogsFromPathWithWindows(pathToFolder, windows, grayscale=False, resize=False, finalSize=None, subset=-1,
-                               normalize=True, maxValue=False, printImages=False, printHogs=False, printSlices=False):
+def get_hogs_from_path_with_windows(pathToFolder, windows, grayscale=False, resize=False, finalSize=None, subset=-1,
+                                    normalize=True, maxValue=False, printImages=False, printHogs=False, printSlices=False):
     # Windows es una lista de ventanas, cada ventana tiene el formato (y,x). i.e.: (96,48)
     hogs = []
     i = 0
     for dirPath, dirName, fileNames in os.walk(pathToFolder):
         random.shuffle(fileNames)
         for f in fileNames:
-            image = LoadImageFromPath(JoinPaths(dirPath, f))
+            image = load_image_from_path(join_paths(dirPath, f))
             for w in windows:
                 height = w[0]
                 width = w[1]
@@ -150,16 +188,16 @@ def GetHogsFromPathWithWindows(pathToFolder, windows, grayscale=False, resize=Fa
                 while (y + height < image.shape(0)):
                     x = 0
                     while (x + width < image.shape(1)):
-                        img_cropped = CropImage(image, x, y, width, height)
+                        img_cropped = crop_image(image, x, y, width, height)
                         if (printSlices):
-                            PrintImage(img_cropped)
-                        image_hog = HogFromImage(img_cropped, grayscale, resize, finalSize, normalize, maxValue,
+                            print_image(img_cropped)
+                        image_hog = hog_from_image(img_cropped, grayscale, resize, finalSize, normalize, maxValue,
                                                  printHogs)
                         hogs.append(image_hog)
                         x += width
                     y += height
             if (printImages):
-                PrintImage(image)
+                print_image(image)
             i += 1
             if (i == subset):
                 return hogs
@@ -169,28 +207,28 @@ def GetHogsFromPathWithWindows(pathToFolder, windows, grayscale=False, resize=Fa
 # -----------------------------TRATAMIENTO DE H5PY ----------------------------
 
 
-def LoadH5PY(path):
+def load_h5py(path):
     return h5py.File(path, 'rw')
 
 
-def CreateDataset(h5pyFile, datasetName, dataset):
+def create_dataset(h5pyFile, datasetName, dataset):
     h5pyFile.create_dataset(datasetName, data=dataset)
 
 
-def GetDataset(h5pyFile, datasetName):
+def get_dataset(h5pyFile, datasetName):
     return h5pyFile[datasetName][:]
 
 
 # -----------------------------TRATAMIENTO DE SVM -----------------------------
 
 
-def LoadCheckpoint(path):
+def load_checkpoint(path):
     return joblib.load(path)
 
 
-def SaveCheckpoint(classifier_svm, path):
+def save_checkpoint(classifier_svm, path):
     joblib.dump(classifier_svm, path)
 
 
-def CreateLinearSVM():
+def create_linear_svm():
     return svm.LinearSVC(C=CONFIG["SVM"]["C"])
