@@ -148,6 +148,9 @@ def get_sliding_window(image, stepSize, windowSize):
 def non_max_suppression_fast(boxes, overlapThresh):
     """Non max suppression para bounding boxes solapados, fuente:
     https://www.pyimagesearch.com/2015/02/16/faster-non-maximum-suppression-python/"""
+    # Convierto en arreglo de numpy
+    boxes = np.array(boxes)
+
     # if there are no boxes, return an empty list
     if len(boxes) == 0:
         return []

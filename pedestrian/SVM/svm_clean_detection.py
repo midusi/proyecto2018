@@ -1,10 +1,9 @@
 import utils
 import cv2
 import time
-import numpy as np
 
 
-VISUALIZE_SLIDDING_WINDOW = True
+VISUALIZE_SLIDDING_WINDOW = True  # Si esta en True se muestra la ventana deslizante en tiempo real
 
 
 def main():
@@ -58,25 +57,25 @@ def main():
                 if VISUALIZE_SLIDDING_WINDOW:
                     cv2.rectangle(clone, (x, y), (x + win_w, y + win_h), (0, 255, 0), 2)  # Rectangulo verde
 
+            # Si se quiere ver la ventana deslizante la grafico y la muestro
             if VISUALIZE_SLIDDING_WINDOW:
                 cv2.rectangle(clone, (x, y), (x + win_w, y + win_h), (0, 0, 0), 2)  # Rectangulo negro
                 cv2.imshow("Slidding Window", clone)
                 cv2.waitKey(1)
                 time.sleep(0.025)
 
-        bounding_boxes = np.array(bounding_boxes)
-        pick = utils.non_max_suppression_fast(bounding_boxes, 0.3)
+        bounding_boxes_suppressed = utils.non_max_suppression_fast(bounding_boxes, 0.3)
 
         print("Cantidad de bounding boxes antes de NMS --> {}".format(len(bounding_boxes)))
 
         # Loop sobre las ventanas deslizantes suprimidas
-        for (startX, startY, endX, endY) in pick:
+        for (startX, startY, endX, endY) in bounding_boxes_suppressed:
             cv2.rectangle(clone_suppression, (startX, startY), (endX, endY), (0, 255, 0), 2)  # Rectangulo verde
 
-        print("Cantidad de bounding boxes despues de NMS --> {}".format(len(pick)))
+        print("Cantidad de bounding boxes despues de NMS --> {}".format(len(bounding_boxes_suppressed)))
 
         # Si hay bounding boxes productos del NMS graficados, muestro la imagen
-        if len(pick):
+        if len(bounding_boxes_suppressed):
             cv2.imshow("Window final", clone_suppression)
             cv2.waitKey(1)
             time.sleep(5.025)
