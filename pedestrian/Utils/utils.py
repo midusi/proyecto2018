@@ -137,6 +137,8 @@ def get_pyramid(image, scale=1.5, minSize=(30, 30)):
 
 
 def detect_pedestrian(image, win_w, win_h, epsilon, predict_function):
+    image = to_grayscale(image)
+    image = normalize_image_max(image)
     final_bounding_boxes = []
     for i, resized_image in enumerate(get_pyramid(image, scale=epsilon)):
         coefficient = epsilon ** i
@@ -165,9 +167,7 @@ def detect_pedestrian(image, win_w, win_h, epsilon, predict_function):
 
                 final_bounding_boxes.append(bounding_box)
 
-    final_bounding_boxes = non_max_suppression_fast(final_bounding_boxes, 0.25)
-    for (startX, startY, endX, endY) in final_bounding_boxes:
-            cv2.rectangle(image, (startX, startY), (endX, endY), (0, 255, 0), 2)  # Rectangulo verde
+    return non_max_suppression_fast(final_bounding_boxes, 0.25)
 
 
 def get_sliding_window(image, stepSize, windowSize):
