@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import h5py
 import random
 import numpy as np
+import cv2
 
 CONFIG = {
     "HOG": {
@@ -135,6 +136,40 @@ def get_pyramid(image, scale=1.5, minSize=(30, 30)):
         yield image
 
 
+def detect_pedestrian(image, win_w, win_h, epsilon, predict_function):
+    final_bounding_boxes = []
+    for i, resized_image in enumerate(get_pyramid(image, scale=epsilon)):
+        coefficient = epsilon ** i
+
+        # Loop sobre la ventana deslizante en diferentes posiciones
+        for (x, y, window) in get_sliding_window(resized_image, stepSize=(32, 64), windowSize=(win_w, win_h)):
+            # Si la ventana no coincide con nuestro tamaño de ventana, se ignora
+            # if the window does not meet our desired window size, ignore it
+            if window.shape[0] != win_h or window.shape[1] != win_w:
+                continue
+
+            cropped_image = resize(window, [96, 48])  # Escalo
+            cropped_image_hog = get_hog_from_image(cropped_image, normalize=False)  # Obtengo el HOG
+
+            # Comienzo a predecir
+            # prediction = svm.predict([cropped_image_hog])[0]
+            if predict_function(cropped_image_hog):
+
+                # Si es un peaton guardo el bounding box
+                bounding_box = (
+                    x * coefficient,
+                    y * coefficient,
+                    (x + win_w) * coefficient,
+                    (y + win_h) * coefficient
+                )
+
+                final_bounding_boxes.append(bounding_box)
+
+    final_bounding_boxes = non_max_suppression_fast(final_bounding_boxes, 0.25)
+    for (startX, startY, endX, endY) in final_bounding_boxes:
+            cv2.rectangle(image, (startX, startY), (endX, endY), (0, 255, 0), 2)  # Rectangulo verde
+
+
 def get_sliding_window(image, stepSize, windowSize):
     """Devuelve las ventanas deslizantes de la imagen, fuente:
     https://www.pyimagesearch.com/2015/03/23/sliding-windows-for-object-detection-with-python-and-opencv/"""
@@ -153,7 +188,7 @@ def non_max_suppression_fast(boxes, overlapThresh):
 
     # if there are no boxes, return an empty list
     if len(boxes) == 0:
-        return []
+        return np.array([])
 
     # if the bounding boxes integers, convert them to floats --
     # this is important since we'll be doing a bunch of divisions
