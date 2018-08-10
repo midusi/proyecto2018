@@ -137,6 +137,8 @@ def get_pyramid(image, scale=1.5, minSize=(30, 30)):
 
 
 def detect_pedestrian(image, win_w, win_h, epsilon, predict_function):
+    """Detecta peatones y devuelve los bounding boxes con el Non Maximal Supression
+    aplicado"""
     image = to_grayscale(image)
     image = normalize_image_max(image)
     final_bounding_boxes = []
@@ -146,7 +148,6 @@ def detect_pedestrian(image, win_w, win_h, epsilon, predict_function):
         # Loop sobre la ventana deslizante en diferentes posiciones
         for (x, y, window) in get_sliding_window(resized_image, stepSize=(32, 64), windowSize=(win_w, win_h)):
             # Si la ventana no coincide con nuestro tamaño de ventana, se ignora
-            # if the window does not meet our desired window size, ignore it
             if window.shape[0] != win_h or window.shape[1] != win_w:
                 continue
 

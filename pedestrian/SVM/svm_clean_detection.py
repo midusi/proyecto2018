@@ -2,6 +2,7 @@ import utils
 import cv2
 import time
 import numpy as np
+import sys
 
 
 VISUALIZE_SLIDDING_WINDOW = False  # Si esta en True se muestra la ventana deslizante en tiempo real
@@ -17,13 +18,15 @@ def main():
     # Cargo y preparo la imagen
     # image = utils.load_image_from_path('/home/genaro/PycharmProjects/proyecto2018/pedestrian/SVM/imgs/street4.jpg')
     image = cv2.imread('/home/genaro/PycharmProjects/proyecto2018/pedestrian/SVM/imgs/street4.jpg')
+    print(image.shape)
     cv2.imshow("Window final", image)
     # cv2.waitKey(1)
     # time.sleep(5.025)
     image = utils.to_grayscale(image)
     image = utils.normalize_image_max(image)
 
-    final_bounding_boxes = np.array([], ndmin=2)
+    # final_bounding_boxes = np.array([], dtype='int16').reshape(0, 4)
+    final_bounding_boxes = []
 
     # Obtengo mi SVM
     svm = utils.load_checkpoint('/home/genaro/PycharmProjects/checkpoints_proyecto2018/svmCheckpoint.pkl')
@@ -35,10 +38,10 @@ def main():
         # clone_suppression = clone.copy()  # Hago una copia para graficar el resultado de NMS
 
         # Lista de bounding boxes para el Non Maximal Suppression
-        bounding_boxes = []
+        # bounding_boxes = []
 
         # Llevo control para saber si funciona el NMS
-        count_bounding_boxes = 0
+        # count_bounding_boxes = 0
 
         # Loop sobre la ventana deslizante en diferentes posiciones
         for (x, y, window) in utils.get_sliding_window(resized_image, stepSize=(32, 64), windowSize=(win_w, win_h)):
@@ -59,14 +62,23 @@ def main():
             if prediction == 1:
 
                 # Si es un peaton guardo el bounding box
+                print(coefficient)
+                # bounding_box = (
+                #     x * coefficient,
+                #     y * coefficient,
+                #     (x + win_w) * coefficient,
+                #     (y + win_h) * coefficient
+                # )
                 bounding_box = (
-                    x * coefficient,
-                    y * coefficient,
-                    (x + win_w) * coefficient,
-                    (y + win_h) * coefficient
+                    x,
+                    y,
+                    (x + win_w),
+                    (y + win_h)
                 )
-                bounding_boxes.append(bounding_box)
-                count_bounding_boxes += 1
+                print(bounding_box)
+                # bounding_boxes.append(bounding_box)
+                final_bounding_boxes.append(bounding_box)
+                # count_bounding_boxes += 1
 
                 # Si es un peaton grafico la ventana deslizante
                 # if VISUALIZE_SLIDDING_WINDOW:
@@ -79,9 +91,14 @@ def main():
             #     cv2.waitKey(1)
             #     time.sleep(0.025)
 
-        final_bounding_boxes = np.concatenate((final_bounding_boxes, utils.non_max_suppression_fast(bounding_boxes, 0.3)))
-
-        print("Cantidad de bounding boxes antes de NMS --> {}".format(len(bounding_boxes)))
+        # non_result = utils.non_max_suppression_fast(bounding_boxes, 0.3)
+        # # print(type(non_result))
+        # if non_result.any():
+        #     print(non_result)
+        #     print(non_result.shape)
+        # final_bounding_boxes = np.vstack((final_bounding_boxes, bounding_boxes))
+        # final_bounding_boxes += bounding_boxes
+        # print("Cantidad de bounding boxes antes de NMS --> {}".format(len(bounding_boxes)))
 
         # Loop sobre las ventanas deslizantes suprimidas
         # for (startX, startY, endX, endY) in bounding_boxes_suppressed:
@@ -95,15 +112,27 @@ def main():
         #     cv2.imshow("Window final", image)
         #     cv2.waitKey(1)
         #     time.sleep(5.025)
-    print(final_bounding_boxes)
-    print(final_bounding_boxes.shape)
+
+        break
+    # print(final_bounding_boxes)
+    # print(final_bounding_boxes.shape)
+    final_bounding_boxes = utils.non_max_suppression_fast(final_bounding_boxes, 0.25)
     for (startX, startY, endX, endY) in final_bounding_boxes:
-        cv2.rectangle(image, (startX, startY), (endX, endY), (0, 255, 0), 2)  # Rectangulo verde
+        try:
+            cv2.rectangle(image, (startX, startY), (endX, endY), (0, 255, 0), 2)  # Rectangulo verde
+            # cv2.rectangle(image, (startY, startX), (endY, endX), (0, 255, 0), 2)  # Rectangulo verde
+        except:
+            print(sys.exc_info()[0])
+            print(startX)
+            print(startY)
+            print(endX)
+            print(endY)
     print("Cantidad de bounding boxes despues de NMS --> {}".format(len(final_bounding_boxes)))
 
     cv2.imshow("Window final", image)
     cv2.waitKey(1)
     time.sleep(5.025)
+    input()
 
 
 if __name__ == '__main__':

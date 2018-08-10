@@ -158,7 +158,7 @@ def load_training_data():
     print("------------------------")
     print("y shape", y.shape, "| y len --> ", len(y))
     print("------------------------")
-    # exit(0)
+    exit(0)
     return x, y
 
 
