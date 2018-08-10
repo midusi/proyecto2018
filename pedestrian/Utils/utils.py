@@ -1,3 +1,6 @@
+import threading
+
+
 import skimage.io
 import skimage.transform
 from sklearn.preprocessing import normalize
@@ -136,13 +139,48 @@ def get_pyramid(image, scale=1.5, minSize=(30, 30)):
         yield image
 
 
-def detect_pedestrian(image, win_w, win_h, epsilon, predict_function):
+def detect_pedestrian2(image, win_w, win_h, epsilon, predict_function):
     """Detecta peatones y devuelve los bounding boxes con el Non Maximal Supression
     aplicado"""
     image = to_grayscale(image)
     image = normalize_image_max(image)
     final_bounding_boxes = []
     for i, resized_image in enumerate(get_pyramid(image, scale=epsilon)):
+        coefficient = epsilon ** i
+
+        # Loop sobre la ventana deslizante en diferentes posiciones
+        for (x, y, window) in get_sliding_window(resized_image, stepSize=(32, 64), windowSize=(win_w, win_h)):
+            # Si la ventana no coincide con nuestro tamaño de ventana, se ignora
+            if window.shape[0] != win_h or window.shape[1] != win_w:
+                continue
+
+            cropped_image = resize(window, [96, 48])  # Escalo
+            cropped_image_hog = get_hog_from_image(cropped_image, normalize=False)  # Obtengo el HOG
+
+            # Comienzo a predecir
+            # prediction = svm.predict([cropped_image_hog])[0]
+            if predict_function(cropped_image_hog):
+
+                # Si es un peaton guardo el bounding box
+                bounding_box = (
+                    x * coefficient,
+                    y * coefficient,
+                    (x + win_w) * coefficient,
+                    (y + win_h) * coefficient
+                )
+
+                final_bounding_boxes.append(bounding_box)
+
+    return non_max_suppression_fast(final_bounding_boxes, 0.25)
+
+
+def detect_pedestrian(image, win_w, win_h, epsilon, predict_function, minSize=(30,30)):
+    """Detecta peatones y devuelve los bounding boxes con el Non Maximal Supression
+    aplicado"""
+    image = to_grayscale(image)
+    image = normalize_image_max(image)
+    final_bounding_boxes = []
+    for i, resized_image in enumerate(get_pyramid(image, scale=epsilon, minSize=minSize)):
         coefficient = epsilon ** i
 
         # Loop sobre la ventana deslizante en diferentes posiciones
