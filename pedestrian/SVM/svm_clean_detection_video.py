@@ -1,8 +1,9 @@
 import utils
 import cv2
 
-COUNT_IGNORED_FRAMES = 10
-CHECKPOINT_PATH = '/home/genaro/PycharmProjects/checkpoints_proyecto2018/svmCheckpoint.pkl'
+COUNT_IGNORED_FRAMES = 3
+CHECKPOINT_PATH = '/home/genaro/PycharmProjects/checkpoints_proyecto2018/svmCheckpoint (Bruce Willis).pkl'
+
 
 def main():
     svm = utils.load_checkpoint(CHECKPOINT_PATH)
@@ -31,7 +32,7 @@ def main():
 
         # Muestro el frame
         cv2.imshow('frame', frame)
-
+        # exit()
         # Si presiona 'q' sale
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
