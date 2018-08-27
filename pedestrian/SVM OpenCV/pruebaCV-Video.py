@@ -20,13 +20,13 @@ def main():
     try:    
         while(True):
         
-            #Saltea i cantidad de frames
-            if i < 0:
+            """#Saltea i cantidad de frames
+            if i < 1:
                 i += 1
                 cap.grab()
                 continue
             
-            i = 0
+            i = 0"""
 
             #Lee el proximo frame a procesar
             ret, frame = cap.read()
@@ -52,7 +52,7 @@ def main():
                 cv2.rectangle(frame, (int(x//settings.resize), int(y//settings.resize)), (int((x + w)//settings.resize), int((y + h)//settings.resize)), (0, 255, 0), 2)
             cv2.putText(frame,str(round(FPS,2)),(10,50), cv2.FONT_HERSHEY_SIMPLEX, 1,(0,0,255),2,cv2.LINE_AA)
             cv2.imshow("Detections", frame)
-            cv2.waitKey(15)
+            cv2.waitKey(2)
     finally:
         cv2.destroyWindow("Detections")
     
