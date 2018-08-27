@@ -9,15 +9,19 @@ def main():
     hog.setSVMDetector(cv2.HOGDescriptor_getDefaultPeopleDetector())
     
     #Inicializacion de captura de video desde camara web o archivo de video
-    #cap = cv2.VideoCapture(0)
-    cap = cv2.VideoCapture(settings.vid_path)   
+    cap = cv2.VideoCapture(1)
+    #cap = cv2.VideoCapture(settings.vid_path)   
     i = 0
+    counter = 0
+    FPS = 0
+    
+    start = time.time()
     
     try:    
         while(True):
         
             #Saltea i cantidad de frames
-            if i < 2:
+            if i < 0:
                 i += 1
                 cap.grab()
                 continue
@@ -30,32 +34,24 @@ def main():
             #Pasa el frame a escala de grises y lo reescala
             image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             image = cv2.resize(image,None,fx=settings.resize, fy=settings.resize, interpolation = cv2.INTER_CUBIC)
-            
-            """fig.add_subplot(221)
-            plt.title('Test')
-            plt.imshow(image)"""	
-            
-            #Empieza a correr el tiempo para calcular cuanto tarda
-            start = time.time()
-            
+                        
             #Calcula el Hog y hace la deteccion con SVM devolviendo los bounding boxes de los match
             g = HogDescriptor(image,hog)
             
-            #Calcula el tiempo transcurrido
-            end = time.time()
-            parcial = end - start
-            print(parcial)
+            #Calcula el tiempo transcurrido y muestra FPS
+            counter+=1
+            if (time.time() - start) > 1 :
+                #print("FPS: ", counter / (time.time() - start))                
+                FPS = counter / (time.time() - start)
+                counter = 0
+                start = time.time()
             
-            """fig.add_subplot(222)
-            plt.title('Test2')
-            plt.imshow(cropped_image)	"""
-
             #print(g)
             #Dibuja los rectangulos en pantalla de lo que detectó
             for (x, y, w, h) in g:
-                cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
-            
-            cv2.imshow("Detections", image)
+                cv2.rectangle(frame, (int(x//settings.resize), int(y//settings.resize)), (int((x + w)//settings.resize), int((y + h)//settings.resize)), (0, 255, 0), 2)
+            cv2.putText(frame,str(round(FPS,2)),(10,50), cv2.FONT_HERSHEY_SIMPLEX, 1,(0,0,255),2,cv2.LINE_AA)
+            cv2.imshow("Detections", frame)
             cv2.waitKey(15)
     finally:
         cv2.destroyWindow("Detections")
