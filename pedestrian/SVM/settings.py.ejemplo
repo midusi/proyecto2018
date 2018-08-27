@@ -1,0 +1,12 @@
+VISUALIZE_SLIDDING_WINDOW = False # Si esta en True se muestra la ventana deslizante en tiempo real
+
+#Tamaño que se reduce el tamaño de la imagen en cada iteracion de la piramide
+EPSILON = 1.5
+# Tamaño de ventana deslizante
+(win_w, win_h) = (200, 400)
+
+#Path de la imagen para probar deteccion
+img_path = '/home/genaro/PycharmProjects/proyecto2018/pedestrian/SVM/imgs/street4.jpg'
+
+#Checkpoint del SVM
+checkpoint_path = '/home/genaro/PycharmProjects/checkpoints_proyecto2018/svmCheckpoint.pkl'
