@@ -1,0 +1,11 @@
+#Path de la imagen y video para probar deteccion
+img_path = 'crop.png'
+vid_path = 'video.mp4'
+
+#Settings de reescalar
+resize = 0.3
+
+#Settings de la SVM
+scaleDetection = 1.5
+padding = 16
+winStride = 5
