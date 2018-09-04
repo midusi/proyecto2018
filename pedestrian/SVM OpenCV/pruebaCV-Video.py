@@ -6,7 +6,7 @@ import numpy as np
 def main():
     #fig = plt.figure()
     #Inicializacion del HogDescriptor
-    """winSize = (64,64)
+    winSize = (64,128)
     blockSize = (16,16)
     blockStride = (8,8)
     cellSize = (8,8)
@@ -17,15 +17,15 @@ def main():
     L2HysThreshold = 0.2
     gammaCorrection = 1
     nlevels = 64
-    signedGradients = False"""
-    hog = cv2.HOGDescriptor()
-    #hog = cv2.HOGDescriptor(winSize,blockSize,blockStride,cellSize,nbins,derivAperture,winSigma, histogramNormType,L2HysThreshold,gammaCorrection,nlevels,signedGradients)
+    signedGradients = False
+    #hog = cv2.HOGDescriptor()
+    hog = cv2.HOGDescriptor(winSize,blockSize,blockStride,cellSize,nbins,derivAperture,winSigma, histogramNormType,L2HysThreshold,gammaCorrection,nlevels,signedGradients)
     hog.setSVMDetector(cv2.HOGDescriptor_getDefaultPeopleDetector())
     
     #Inicializacion de captura de video desde camara web o archivo de video
-    cap = cv2.VideoCapture("video5.mp4")
+    cap = cv2.VideoCapture(1)
     #cap = cv2.VideoCapture(settings.vid_path)   
-    i = 0
+    i = True
     counter = 0
     FPS = 0
     
@@ -34,24 +34,29 @@ def main():
     try:    
         while(True):
         
-            """#Saltea i cantidad de frames
-            if i < 1:
-                i += 1
+            """#Saltea 1 frame
+            if i == True:
+                i = False
+                counter+=1
                 cap.grab()
                 continue
-            
-            i = 0"""
+            i = True"""
 
             #Lee el proximo frame a procesar
             ret, frame = cap.read()
             
-            #Pasa el frame a escala de grises y lo reescala
-            image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            image = cv2.resize(image,None,fx=settings.resize, fy=settings.resize, interpolation = cv2.INTER_CUBIC)
-                        
-            #Calcula el Hog y hace la deteccion con SVM devolviendo los bounding boxes de los match
-            g,w = HogDescriptor(image,hog)
-            ng = non_max_suppression(g, overlapThresh=0.65)
+            #Saltea 1 frame
+            if i == True:
+                i = False
+                #Pasa el frame a escala de grises y lo reescala
+                image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                image = cv2.resize(image,None,fx=settings.resize, fy=settings.resize, interpolation = cv2.INTER_CUBIC)
+                            
+                #Calcula el Hog y hace la deteccion con SVM devolviendo los bounding boxes de los match
+                g,w = HogDescriptor(image,hog)
+                ng = non_max_suppression(g, overlapThresh=0.65)
+            else:
+                i = True
             
             #Calcula el tiempo transcurrido y muestra FPS
             counter+=1
@@ -61,7 +66,6 @@ def main():
                 counter = 0
                 start = time.time()
             
-            #print(g)
             #Dibuja los rectangulos en pantalla de lo que detectó
             for (x, y, w, h) in ng:
                 cv2.rectangle(frame, (int(x//settings.resize), int(y//settings.resize)), (int((x + w)//settings.resize), int((y + h)//settings.resize)), (0, 255, 0), 2)

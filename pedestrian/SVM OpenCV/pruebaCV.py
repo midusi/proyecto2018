@@ -3,40 +3,45 @@ import time
 import settings
 
 def main():
-    #fig = plt.figure()
+    winSize = (64,128)
+    blockSize = (16,16)
+    blockStride = (8,8)
+    cellSize = (8,8)
+    nbins = 9
+    derivAperture = 2
+    winSigma = -1.
+    histogramNormType = 0
+    L2HysThreshold = 0.2
+    gammaCorrection = 1
+    nlevels = 64
+    signedGradients = False
     #Inicializacion del HogDescriptor
-    hog = cv2.HOGDescriptor()
+    #hog = cv2.HOGDescriptor()
+    hog = cv2.HOGDescriptor(winSize,blockSize,blockStride,cellSize,nbins,derivAperture,winSigma, histogramNormType,L2HysThreshold,gammaCorrection,nlevels,signedGradients)
     hog.setSVMDetector(cv2.HOGDescriptor_getDefaultPeopleDetector())
         
     #Carga la imagen en escala de grises y la reescala
-    image = cv2.imread(settings.img_path, cv2.IMREAD_GRAYSCALE)
-    image = cv2.resize(image,None,fx=settings.resize, fy=settings.resize, interpolation = cv2.INTER_CUBIC)
-     
-    """fig.add_subplot(221)
-    plt.title('Test')
-    plt.imshow(image)"""	
+    image = cv2.imread(settings.img_path)
+    imageGray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    imageGray = cv2.resize(image,None,fx=settings.resize, fy=settings.resize, interpolation = cv2.INTER_CUBIC)
 
-    #Empieza a correr el tiempo para calcular cuanto tarda
+    """#Empieza a correr el tiempo para calcular cuanto tarda
     print("Time started ...")
-    start = time.time()
+    start = time.time()"""
     
     #Calcula el Hog y hace la deteccion con SVM devolviendo los bounding boxes de los match
-    g = HogDescriptor(image,hog)
+    g = HogDescriptor(imageGray,hog)
     
-    #Calcula el tiempo transcurrido
+    """#Calcula el tiempo transcurrido
     end = time.time()
     print("Time Finished ...")
     parcial = end - start
-    print(parcial)
-    
-    """fig.add_subplot(222)
-    plt.title('Test2')
-    plt.imshow(cropped_image)	"""
+    print(parcial)"""
         
     #print(g)
     #Dibuja los rectangulos en pantalla de lo que detectó
     for (x, y, w, h) in g:
-        cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
+        cv2.rectangle(image, (int(x//settings.resize), int(y//settings.resize)), (int((x + w)//settings.resize), int((y + h)//settings.resize)), (0, 255, 0), 2)
     
     cv2.imshow("Detections", image)
     cv2.waitKey(0)
