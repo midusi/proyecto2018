@@ -101,7 +101,6 @@ def main():
                 # Si es un peaton grafico la ventana deslizante
                 # if VISUALIZE_SLIDDING_WINDOW:
                 #     cv2.rectangle(clone, (x, y), (x + win_w, y + win_h), (0, 255, 0), 2)  # Rectangulo verde
-f
             # Si se quiere ver la ventana deslizante la grafico y la muestro
             # if VISUALIZE_SLIDDING_WINDOW:
             #     cv2.rectangle(clone, (x, y), (x + win_w, y + win_h), (0, 0, 0), 2)  # Rectangulo negro
@@ -134,7 +133,7 @@ f
         #break    
     # print(final_bounding_boxes)
     # print(final_bounding_boxes.shape)
-
+    
     final_bounding_boxes = utils.non_max_suppression_fast(final_bounding_boxes, 0.25)
     for (startX, startY, endX, endY) in final_bounding_boxes:
         try:
