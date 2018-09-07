@@ -11,6 +11,13 @@ def predict_funcion(x):
     return svm.predict([x])[0] == 1
 
 
+def predict_proba_funcion(x):
+    """Devuelve true si fue evaluado como peaton
+    utilizando probabilidades"""
+    res = svm.decision_function([x])
+    return res[0] > 2
+
+
 def main():
     (win_w, win_h) = (200, 400)
 
@@ -28,7 +35,7 @@ def main():
         ret, frame = cap.retrieve()
 
         # Obtengo los bounding boxes de los peatones del frame
-        bounding_boxes = utils.detect_pedestrian(frame, win_w, win_h, 1.5, predict_funcion)
+        bounding_boxes = utils.detect_pedestrian(frame, win_w, win_h, 1.5, predict_proba_funcion)
 
         # Dibujo los peatones
         for (startX, startY, endX, endY) in bounding_boxes:
