@@ -17,8 +17,7 @@ import cv2
 
 CONFIG = {
     "HOG": {
-        "BLOCK_NORM": "L2-Hys",
-        "VISUALIZE": True
+        "BLOCK_NORM": "L2-Hys"
     },
     "IMAGE": {
         "FINAL_SIZE": (96, 48)
@@ -141,7 +140,7 @@ def get_pyramid(image, scale=1.5, minSize=(30, 30)):
 
 def detect_pedestrian(image, win_w, win_h, epsilon, predict_function):
     image = to_grayscale(image)
-    image = normalize_image_max(image)
+    # image = normalize_image_max(image)
     final_bounding_boxes = []
     for i, resized_image in enumerate(get_pyramid(image, scale=epsilon)):
         coefficient = epsilon ** i
@@ -154,11 +153,12 @@ def detect_pedestrian(image, win_w, win_h, epsilon, predict_function):
                 continue
 
             cropped_image = resize(window, [96, 48])  # Escalo
-            cropped_image_hog = get_hog_from_image(cropped_image, normalize=False)  # Obtengo el HOG
+            cropped_image_hog = get_hog_from_image(cropped_image, normalize=False, )  # Obtengo el HOG
 
             # Comienzo a predecir
             # prediction = svm.predict([cropped_image_hog])[0]
-            if predict_function(cropped_image_hog):
+            prediction = predict_function(cropped_image_hog)
+            if prediction:
 
                 # Si es un peaton guardo el bounding box
                 bounding_box = (
@@ -255,8 +255,7 @@ def join_paths(folder, fil):
 # ------------------TRATAMIENTO DE HOGS----------------------
 
 
-def get_hog_from_image(image, grayscale=False, resize=False, finalSize=None, normalize=True, maxValue=False,
-                   printHogs=False):  # Devuelve el HOG de una imagen
+def get_hog_from_image(image, grayscale=False, resize=False, finalSize=None, normalize=True, maxValue=False):  # Devuelve el HOG de una imagen
     # Si resize es True, prueba usar finalSize, si finalSize es None, usa la configuración por default definida arriba
     if grayscale:
         image = to_grayscale(image)
@@ -264,9 +263,7 @@ def get_hog_from_image(image, grayscale=False, resize=False, finalSize=None, nor
         image = resize(image, finalSize if (finalSize != None) else CONFIG["IMAGE"]["FINAL_SIZE"])
     if normalize:
         image = normalize(image, maxValue)
-    h, i = hog(image, block_norm=CONFIG["HOG"]["BLOCK_NORM"], transform_sqrt=True, visualise=CONFIG["HOG"]["VISUALIZE"])
-    if printHogs:
-        print_image(i)
+    h = hog(image, block_norm=CONFIG["HOG"]["BLOCK_NORM"], transform_sqrt=True)
     return h
 
 

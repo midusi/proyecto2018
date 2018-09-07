@@ -14,12 +14,11 @@ import sys
 
 CHECKPOINT_PATH = '/home/genaro/PycharmProjects/checkpoints_proyecto2018/svmCheckpoint.pkl'  # Path donde se guarda el SVM ya entrenado
 IMG_PATH = './imgs/street4.jpg'
-SAVE_PATH = '/home/genaro/PycharmProjects/checkpoints_proyecto2018/imgs_result'
 FINAL_SIZE = (96, 48)  # Tamaño de la imagen que vamos a manejar
 SLIDING_WINDOW_SIZE = [500, 400]  # Tamaño de la ventana deslizante (heigth, width)
 SLIDING_WINDOW_STRIDE = (300, 150)  # Stride de la ventana deslizante (heigth, width)
-DRAW_SLIDING_WINDOW = False  # En True si se quiere graficar en la imagen la ventrana deslizante
-DRAW_PEDRESTRIAN_BOUNDING_BOX = False  # En True si se quiere graficar los bounding boxes de los peatones
+DRAW_SLIDING_WINDOW = True  # En True si se quiere graficar en la imagen la ventrana deslizante
+DRAW_PEDRESTRIAN_BOUNDING_BOX = True  # En True si se quiere graficar los bounding boxes de los peatones
 SHOW_IMG = False  # Mostar la imagen con los rectangulos dibujados
 TEST_SUBSET_SIZE = 0  # Cantidad de imagenes a procesar para la deteccion. 0 si se quieren procesar todas
 
@@ -390,7 +389,7 @@ def normalize_img(img):
 
 
 def main():
-    if not CHECKPOINT_PATH or not IMG_PATH or not SAVE_PATH:
+    if not CHECKPOINT_PATH or not IMG_PATH:
         print('No se ha seteado algunos parametros!')
         return
 
