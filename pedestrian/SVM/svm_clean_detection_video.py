@@ -2,7 +2,7 @@ import utils
 import cv2
 
 COUNT_IGNORED_FRAMES = 3
-CHECKPOINT_PATH = '/home/genaro/PycharmProjects/checkpoints_proyecto2018/svmCheckpoint (Bruce Willis).pkl'
+CHECKPOINT_PATH = 'svmCheckpoint.pkl'
 
 
 def main():

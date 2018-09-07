@@ -99,3 +99,11 @@ ENV/
 
 # mypy
 .mypy_cache/
+pedestrian/SVM/utils.py
+pedestrian/SVM/settings.py
+pedestrian/SVM/crop.png
+pedestrian/SVM/svmCheckpoint.pkl
+pedestrian/SVM OpenCV/crop.png
+pedestrian/SVM OpenCV/video.mp4
+*.mp4
+pedestrian/SVM OpenCV/settings.py
