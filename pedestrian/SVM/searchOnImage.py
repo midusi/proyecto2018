@@ -23,7 +23,6 @@ TEST_SUBSET_SIZE = 0  # Cantidad de imagenes a procesar para la deteccion. 0 si 
 
 # HNM
 HDF5_PATH = '/home/genaro/PycharmProjects/checkpoints_proyecto2018/datasets.h5'  # Path donde se guarda los hogs en HDF5
-CHECKPOINT_PATH = '/home/genaro/PycharmProjects/checkpoints_proyecto2018/svmCheckpoint.pkl'  # Path donde se guarda el SVM ya entrena
 IOU_limit = 0.4  # IOU Limite maximo
 DO_HNM = True  # Si esta en True hace HNM, caso no se hace HNM y se ignora el parametro de abajo
 HNM_CICLE_COUNT = 600  # Cantidad de imagenes que se quieren procesar antes de hacer HNM. 0 Para esperar a todas (mejor performance pero quizas arroja problemas de memoria)

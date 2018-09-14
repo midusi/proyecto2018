@@ -14,6 +14,7 @@ import h5py
 import random
 import numpy as np
 from datetime import datetime as dt
+import time
 
 CONFIG = {
     "HOG": {
@@ -59,6 +60,48 @@ def to_grayscale(image):  # Devuelve la imagen en escala de grises
 
 def load_image_from_path(path):  # Carga una imagen dado un PATH
     return skimage.io.imread(path)
+
+
+def get_img_hog(img, must_grayscale=True, must_normalize=True):
+    """Obtiene el HOG de una imagen con algun preprocesamiento
+    solicitado"""
+    if must_grayscale:
+        img = to_grayscale(img)
+
+    # Normalizo la imagen
+    if must_normalize:
+        img = normalize_image_max(img)
+
+    return hog(img, block_norm='L2-Hys', transform_sqrt=True)
+
+
+def get_hog_from_path(path, must_grayscale=False, must_resize=True, must_normalize=True, subset_size=0, final_sizes=(96, 48)):
+    """Genera el HOG de todas las imagenes que se encuentran
+    dentro de la carpeta pasada por parametro"""
+    hogs = []
+    size = 0
+    for dirpath, dirnames, filenames in os.walk(path):  # Obtengo los nombres de los archivos
+        if subset_size:
+            random.shuffle(filenames)  # Los pongo en orden aleatorio cuando genero subset
+            filenames = filenames[0:subset_size]  # Si fue especificado un tamaño de subset recorto el dataset
+        size += len(filenames)  # Cuento la cantidad de archivos que voy a generar el HOG
+        for filename in filenames:
+            img_path = os.path.join(dirpath, filename)
+            img = skimage.io.imread(img_path)  # Cargo la imagen
+
+            # Si pidieron hacer resize...
+            if must_resize:
+                # is_max_size = True
+                img_hog = []
+                for img_size in final_sizes:
+
+                    img = resize(img, img_size)
+                    img_hog_aux = get_img_hog(img, must_grayscale=must_grayscale, must_normalize=must_normalize)
+                    img_hog = np.concatenate([img_hog, img_hog_aux])
+            else:
+                img_hog = get_img_hog(img, must_grayscale=must_grayscale, must_normalize=must_normalize)
+            hogs.append(img_hog)
+    return hogs
 
 
 def normalize_image(image, maxValue=False):  # Normaliza la imagen entre 0 y maxValue o 255
@@ -178,7 +221,9 @@ def get_iou(box_a, box_b):
     return iou
 
 
-def detect_pedestrian(image, win_w, win_h, epsilon, predict_function):
+def detect_pedestrian(image, win_w, win_h, epsilon, predict_function, save_path=None):
+    """Detecta peatones en la imagen seleccionada a partir de una piramide y una ventana
+    deslizante"""
     image = to_grayscale(image)
     # image = normalize_image_max(image)
     final_bounding_boxes = []
@@ -193,12 +238,12 @@ def detect_pedestrian(image, win_w, win_h, epsilon, predict_function):
                 continue
 
             cropped_image = resize(window, [96, 48])  # Escalo
-            cropped_image_hog = get_hog_from_image(cropped_image, normalize=False, )  # Obtengo el HOG
+            cropped_image_hog = get_hog_from_image(cropped_image, normalize=False)  # Obtengo el HOG
 
             # Comienzo a predecir
             # prediction = svm.predict([cropped_image_hog])[0]
-            prediction = predict_function(cropped_image_hog)
-            if prediction:
+            prediction_success = predict_function(cropped_image_hog)
+            if prediction_success:
 
                 # Si es un peaton guardo el bounding box
                 bounding_box = (
@@ -209,6 +254,10 @@ def detect_pedestrian(image, win_w, win_h, epsilon, predict_function):
                 )
 
                 final_bounding_boxes.append(bounding_box)
+
+                # Si me especificaron un path para guardar, lo hago
+                if save_path:
+                    save_img(cropped_image, save_path, 'imagen_{}.png'.format(round(time.time() * 1000)))
 
     return non_max_suppression_fast(final_bounding_boxes, 0.25)
 

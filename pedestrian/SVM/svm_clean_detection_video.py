@@ -8,6 +8,8 @@ CHECKPOINT_PATH = '/home/genaro/PycharmProjects/checkpoints_proyecto2018/svmChec
 
 # Parametros de video
 COUNT_IGNORED_FRAMES = 3
+# SAVE_POSITIVE_PATH = '/home/genaro/PycharmProjects/predicciones_positivas/'
+SAVE_POSITIVE_PATH = None
 
 # Parametros de tracking
 THRESHOLD_TRACKING = 0.6
@@ -55,7 +57,7 @@ def main():
         begin_time_frame = dt.now()
 
         # Obtengo los bounding boxes de los peatones del frame
-        bounding_boxes = utils.detect_pedestrian(frame, win_w, win_h, 1.5, predict_proba_funcion)
+        bounding_boxes = utils.detect_pedestrian(frame, win_w, win_h, 1.5, predict_proba_funcion, SAVE_POSITIVE_PATH)
 
         # Obtengo los bounding boxes con parametros de tracking
         old_bounding_boxes = utils.tracking_bounding_boxes_ms(
