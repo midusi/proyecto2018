@@ -138,6 +138,46 @@ def get_pyramid(image, scale=1.5, minSize=(30, 30)):
         yield image
 
 
+def overlap(r1, r2):
+    """(USADO PARA SACAR IOU) Devuelve True si los rectangulos tienen interseccion"""
+    # return range_overlap(r1.left, r1.right, r2.left, r2.right) and range_overlap(r1.bottom, r1.top, r2.bottom, r2.top)
+    return range_overlap(r1[0], r1[2], r2[0], r2[2]) and range_overlap(r1[1], r1[3], r2[1], r2[3])
+
+
+def range_overlap(a_min, a_max, b_min, b_max):
+    """(USADO PARA SACAR IOU) Funcion usada para el calculo de overlapping"""
+    return (a_min <= b_max) and (b_min <= a_max)
+
+
+def get_iou(box_a, box_b):
+    """Codigo sacado de https://www.pyimagesearch.com/2016/11/07/intersection-over-union-iou-for-object-detection/
+    porque me la re banco. box = [min_x, min_y, max_x, max_y]"""
+    if not overlap(box_a, box_b):
+        return 0.0
+
+    # determine the (x, y)-coordinates of the intersection rectangle
+    xA = max(box_a[0], box_b[0])
+    yA = max(box_a[1], box_b[1])
+    xB = min(box_a[2], box_b[2])
+    yB = min(box_a[3], box_b[3])
+
+    # compute the area of intersection rectangle
+    inter_area = (xB - xA + 1) * (yB - yA + 1)
+
+    # compute the area of both the prediction and ground-truth
+    # rectangles
+    box_a_area = (box_a[2] - box_a[0] + 1) * (box_a[3] - box_a[1] + 1)
+    box_b_area = (box_b[2] - box_b[0] + 1) * (box_b[3] - box_b[1] + 1)
+
+    # compute the intersection over union by taking the intersection
+    # area and dividing it by the sum of prediction + ground-truth
+    # areas - the interesection area
+    iou = inter_area / float(box_a_area + box_b_area - inter_area)
+
+    # Valor final
+    return iou
+
+
 def detect_pedestrian(image, win_w, win_h, epsilon, predict_function):
     image = to_grayscale(image)
     # image = normalize_image_max(image)
