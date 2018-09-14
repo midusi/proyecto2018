@@ -1,10 +1,8 @@
-import h5py
 import skimage.io
 from matplotlib import patches
 from sklearn.externals import joblib
 from skimage.feature import hog
 from sklearn.preprocessing import normalize
-import numpy as np
 from skimage.color import rgb2gray
 import matplotlib.pyplot as plt
 import os
@@ -283,37 +281,6 @@ def get_daimler_test_data():
     return ans
 
 
-def do_hard_negative_mining(hogs_to_hard_mining, classifier_svm):
-    """Hace hard negative mining con los nuevos HOGS. Recupera desde memoria
-    los que ya teniamos, se los agrega y vuelvee a entrenar el SVM"""
-
-    # Obtengo los arreglos
-    print("Extrayendo datos guardados")
-    h5f = h5py.File(HDF5_PATH, 'r')
-    x, y = h5f['dataset_x'][:], h5f['dataset_y'][:]
-    h5f.close()  # Cierro el archivo HDF5
-
-    # Concateno los nuevos valores
-    print("Almacenando nuevos cambios")
-    hogs_to_hard_mining = np.array(hogs_to_hard_mining)
-    x = np.concatenate([x, hogs_to_hard_mining])
-    y = np.append(y, np.zeros(len(hogs_to_hard_mining)))
-
-    # Guardo los nuevos valores
-    print("Guardando cambios modificados")
-    h5f = h5py.File(HDF5_PATH, 'w')
-    h5f.create_dataset('dataset_x', data=x)
-    h5f.create_dataset('dataset_y', data=y)
-    h5f.close()  # Cierro el archivo HDF5
-
-    # Entreno al SVM nuevamente
-    print("Reentrenando al SVM")
-    classifier_svm.fit(x, y)
-    joblib.dump(classifier_svm, CHECKPOINT_PATH)  # Guardo los cambios
-
-    print("Hard Negative Mining terminado")
-
-
 def resize(img):
     """Devuelve la imagen con el tamaño modificado"""
     return skimage.transform.resize(img, FINAL_SIZE)
@@ -375,7 +342,7 @@ def main():
         hnm_count += 1
         hogs_to_hnm += hogs_to_hnm_aux
         if DO_HNM and HNM_CICLE_COUNT and hnm_count == HNM_CICLE_COUNT:
-            do_hard_negative_mining(hogs_to_hnm, classifier_svm)
+            utils.do_hard_negative_mining(hogs_to_hnm, classifier_svm, HDF5_PATH, CHECKPOINT_PATH)
 
             # Reseteo los datos
             hnm_count = 0
@@ -390,7 +357,7 @@ def main():
     # Si no se especifico a la variable HNM_CICLE_COUNT hago HNM con todos
     # los hogs almacenados
     if DO_HNM and not HNM_CICLE_COUNT:
-        do_hard_negative_mining(hogs_to_hnm, classifier_svm)
+        utils.do_hard_negative_mining(hogs_to_hnm, classifier_svm, HDF5_PATH, CHECKPOINT_PATH)
 
     if pedestrian_predected:
         print("Precision --> {} / {} = {}".format(pedestrian_success, pedestrian_predected,

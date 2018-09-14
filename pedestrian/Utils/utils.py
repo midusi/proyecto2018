@@ -437,3 +437,34 @@ def save_checkpoint(classifier_svm, path):
 
 def create_linear_svm():
     return svm.LinearSVC(C=CONFIG["SVM"]["C"])
+
+
+def do_hard_negative_mining(hogs_to_hard_mining, classifier_svm, hdf5_path, checkpoint_path):
+    """Hace hard negative mining con los nuevos HOGS. Recupera desde memoria
+    los que ya teniamos, se los agrega y vuelvee a entrenar el SVM"""
+
+    # Obtengo los arreglos
+    print("Extrayendo datos guardados")
+    h5f = h5py.File(hdf5_path, 'r')
+    x, y = h5f['dataset_x'][:], h5f['dataset_y'][:]
+    h5f.close()  # Cierro el archivo HDF5
+
+    # Concateno los nuevos valores
+    print("Almacenando nuevos cambios")
+    hogs_to_hard_mining = np.array(hogs_to_hard_mining)
+    x = np.concatenate([x, hogs_to_hard_mining])
+    y = np.append(y, np.zeros(len(hogs_to_hard_mining)))
+
+    # Guardo los nuevos valores
+    print("Guardando cambios modificados")
+    h5f = h5py.File(hdf5_path, 'w')
+    h5f.create_dataset('dataset_x', data=x)
+    h5f.create_dataset('dataset_y', data=y)
+    h5f.close()  # Cierro el archivo HDF5
+
+    # Entreno al SVM nuevamente
+    print("Reentrenando al SVM")
+    classifier_svm.fit(x, y)
+    joblib.dump(classifier_svm, checkpoint_path)  # Guardo los cambios
+
+    print("Hard Negative Mining terminado")
