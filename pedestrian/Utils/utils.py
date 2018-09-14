@@ -14,6 +14,7 @@ import h5py
 import random
 import numpy as np
 import cv2
+from datetime import datetime as dt
 
 CONFIG = {
     "HOG": {
@@ -283,6 +284,31 @@ def non_max_suppression_fast(boxes, overlapThresh):
     # return only the bounding boxes that were picked using the
     # integer data type
     return boxes[pick].astype("int")
+
+def tracking_bounding_boxes_ms(oldRect, newRect, threshold, frameTime, boundBoxLife):
+    date = dt.now()-frameTime
+    if newRect.any():        
+        newRect = np.pad(newRect,((0,0),(0,1)), 'constant', constant_values=(boundBoxLife))
+        for item in oldRect:
+            item[4] -= date.microseconds
+            ww = np.maximum(np.minimum(item[0] + item[2], newRect[:, 0] + newRect[:, 2]) - np.maximum(item[0], newRect[:, 0]), 0)
+            hh = np.maximum(np.minimum(item[1] + item[3], newRect[:, 1] + newRect[:, 3]) - np.maximum(item[1], newRect[:, 1]), 0)
+            uu = item[2] * item[3] + newRect[:, 2] * newRect[:, 3]
+            iou = (ww * hh / (uu - ww * hh))
+            if(iou.any()):
+                m = max(iou)
+                i = np.argmax(iou)
+                if(m>threshold):
+                    item[0:5] = newRect[i]
+                    newRect = np.vstack([newRect[0:i] , newRect[i+1:]])
+            
+        oldRect = list(filter(lambda rect: rect[4]>0 , oldRect))
+        return oldRect + [vbox for vbox in newRect]
+    
+    for item in oldRect:
+        item[4] -= 3000
+    oldRect = list(filter(lambda rect: rect[4]>0 , oldRect))
+    return oldRect
 
 
 # ------------------TRATAMIENTO DE PATHS---------------------
