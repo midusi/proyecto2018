@@ -13,7 +13,6 @@ import matplotlib.pyplot as plt
 import h5py
 import random
 import numpy as np
-import cv2
 from datetime import datetime as dt
 
 CONFIG = {
@@ -284,6 +283,7 @@ def non_max_suppression_fast(boxes, overlapThresh):
     # return only the bounding boxes that were picked using the
     # integer data type
     return boxes[pick].astype("int")
+
 
 def tracking_bounding_boxes_ms(oldRect, newRect, threshold, frameTime, boundBoxLife):
     date = dt.now()-frameTime
