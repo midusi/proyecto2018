@@ -1,12 +1,15 @@
-"""Valores para testeo del script"""
-porcentaje = .55
-resize = 0.3
-scaleDetection = 1.5
-padding = 16
-winStride = 5
-window_width = 200
-window_height = 200
+"""
+Script para edicion de los parametros en runtime.
+Al presionar las teclas F1 .. F5, aparecera un prompt.
+F1: edita el parametro scaleDetection   # SVM OpenCV/settings.py.ejemplo
+F2: edita el parametro resize           # SVM OpenCV/settings.py.ejemplo
+F3: edita el parametro padding          # SVM OpenCV/settings.py.ejemplo
+F4: edita el parametro winStride        # SVM OpenCV/settings.py.ejemplo
+F5: edita los parametros win_h y win_w  # SVM/settings.py.ejemplo
+"""
 
+
+import settings
 
 from pynput import keyboard
 
@@ -30,42 +33,32 @@ def ask_float(title, actual, min_value=0.0, max_value=1.0):
 
 
 def edit_scale_detection():
-    global scaleDetection
-    answer = ask_float("Editar scaleDetection", scaleDetection, 0.0, 50.0)
+    answer = ask_float("Editar scaleDetection", settings.scaleDetection, 0.0, 50.0)
     if(answer is not None):
-        scaleDetection = answer
-        print("Scale detection actualizado a {}".format(scaleDetection))
+        settings.scaleDetection = answer
 
 def edit_resize():
-    global resize
-    answer = ask_float("Editar resize", resize, 0.0, 5.0)
+    answer = ask_float("Editar resize", settings.resize, 0.0, 5.0)
     if(answer is not None):
-        resize = answer
-        print("Resize actualizado a {}".format(resize))
+        settings.resize = answer
 
 def edit_padding():
-    global padding
-    answer = ask_integer("Editar padding", padding, 0, 500)
+    answer = ask_integer("Editar padding", settings.padding, 0, 500)
     if(answer is not None):
-        padding = answer
-        print("padding actualizado a {}".format(padding))
+        settings.padding = answer
 
 def edit_win_stride():
-    global winStride
-    answer = ask_integer("Editar winStride", winStride, 0, 500)
+    answer = ask_integer("Editar winStride", settings.winStride, 0, 500)
     if(answer is not None):
-        winStride = answer
-        print("winStride actualizado a {}".format(winStride))
+        settings.winStride = answer
 
 def edit_window_size():
-    global window_width
-    global window_height
-    new_width   = ask_integer("Editar window width", window_width, 0, 10000)
-    new_height  = ask_integer("Editar window height", window_height, 0, 10000)
+    new_width   = ask_integer("Editar window width", settings.win_w, 0, 10000)
+    new_height  = ask_integer("Editar window height", settings.win_h, 0, 10000)
     if(new_width is not None):
-        window_width = new_width
+        settings.win_w = new_width
     if(new_height is not None):
-        window_height = new_height
+        settings.win_h = new_height
 
 def on_press(key):
     if(key == keyboard.Key.f12):
