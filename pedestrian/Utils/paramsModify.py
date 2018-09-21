@@ -11,7 +11,7 @@ F5: edita los parametros win_h y win_w  # SVM/settings.py.ejemplo
 import settings
 
 from pynput import keyboard
-
+from threading import Thread
 import tkinter as tk
 from tkinter import simpledialog
 
@@ -64,12 +64,12 @@ def edit_win_stride():
 
 
 def edit_window_size():
-    new_width = ask_integer("Editar window width", settings.win_w, 0, 10000)
-    new_height = ask_integer("Editar window height", settings.win_h, 0, 10000)
+    new_width = ask_integer("Editar window width", settings.winWidth, 0, 10000)
+    new_height = ask_integer("Editar window height", settings.winHeight, 0, 10000)
     if new_width is not None:
-        settings.win_w = new_width
+        settings.winWidth = new_width
     if new_height is not None:
-        settings.win_h = new_height
+        settings.winHeight = new_height
 
 
 def on_press(key):
@@ -87,6 +87,31 @@ def on_press(key):
         edit_window_size()
 
 
-with keyboard.Listener(
-        on_press=on_press) as listener:
-    listener.join()
+def on_release(key):
+    if str(key) == "'q'":
+        # Deja de escuchar
+        print('Keypress eliminado')
+        return False
+
+
+def wait_for_keypress():
+    """Bindea el evento de presion de la tecla"""
+    with keyboard.Listener(
+            on_press=on_press,
+            on_release=on_release
+    ) as listener:
+        listener.join()
+
+
+class MyThread(Thread):
+    def __init__(self):
+        Thread.__init__(self)
+
+    def run(self):
+        wait_for_keypress()
+
+
+def bind_keypress_event():
+    """Bindea el evento de presion de una tecla"""
+    thread = MyThread()
+    thread.start()
