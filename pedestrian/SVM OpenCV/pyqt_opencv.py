@@ -194,10 +194,12 @@ def getImage(f,i, hog, oldRect, cap):
         
         FPS = f()
         
+        frame = cv2.flip(frame,1)
+        
         #Dibuja los rectangulos en pantalla de lo que detectó
         for (x, y, w, h, s) in oldRect:
-            cv2.rectangle(frame, (int(x//settings.resize), int(y//settings.resize)), (int(((x + w)*settings.boundBoxSize)//settings.resize), int(((y + h)*settings.boundBoxSize)//settings.resize)), (0, 255, 0), 2)
-            #cv2.rectangle(frame, int(x//settings.resize), int(y//settings.resize), int(((x + w)//settings.resize)*settings.boundBoxSize), int(((y + h)//settings.resize)*settings.boundBoxSize), (0, 255, 0), 2)
+            #cv2.rectangle(frame, (int(x//settings.resize), int(y//settings.resize)), (int(((x + w)*settings.boundBoxSize)//settings.resize), int(((y + h)*settings.boundBoxSize)//settings.resize)), (0, 255, 0), 2)
+            cv2.rectangle(frame, (int(x//settings.resize), int(y//settings.resize)), (int((x + w)//settings.resize), int((y + h)//settings.resize)), (0, 255, 0), 2)
         cv2.putText(frame,str(round(FPS,2)),(10,50), cv2.FONT_HERSHEY_SIMPLEX, 1,(0,0,255),2,cv2.LINE_AA)
     return frame, oldRect, i
 
