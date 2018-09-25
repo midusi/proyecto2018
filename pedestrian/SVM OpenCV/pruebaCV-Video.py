@@ -25,14 +25,12 @@ def main():
     hog.setSVMDetector(cv2.HOGDescriptor_getDefaultPeopleDetector())
     
     #Inicializacion de captura de video desde camara web o archivo de video
-    cap = cv2.VideoCapture("video3.mp4")
-    #cap = cv2.VideoCapture(settings.vid_path)   
+    cap = cv2.VideoCapture(1) 
     i = True
-    counter = 0
     FPS = 0
     oldRect = []
     
-    start = time.time()
+    f = fps()
     
     try:    
         while(True):
@@ -55,13 +53,14 @@ def main():
             else:
                 i = True
             
-            #Calcula el tiempo transcurrido y muestra FPS
+            """#Calcula el tiempo transcurrido y muestra FPS
             counter+=1
             if (time.time() - start) > 1 :
                 #print("FPS: ", counter / (time.time() - start))                
                 FPS = counter / (time.time() - start)
                 counter = 0
-                start = time.time()
+                start = time.time()"""
+            FPS = f()
             
             #Dibuja los rectangulos en pantalla de lo que detectó
             for (x, y, w, h, s) in oldRect:
@@ -109,8 +108,24 @@ def survivingBBoxes_ms(oldRect, newRect, threshold, frameTime):
     oldRect = list(filter(lambda rect: rect[4]>0 , oldRect))
     return oldRect
 
-#def fps():
-    
+class fps():
+    start = 0
+    counter = 0
+    FPS = 0
+    def __init__(self):
+        self.FPS = 0
+        self.counter = 0
+        self.start = time.time()
+        
+    def __call__(self):
+        self.counter+=1
+        if (time.time() - self.start) > 1 :
+            #print("FPS: ", counter / (time.time() - start))                
+            self.FPS = self.counter / (time.time() - self.start)
+            self.counter = 0
+            self.start = time.time()
+        return self.FPS
+        
 
 if __name__ == '__main__':
     main()

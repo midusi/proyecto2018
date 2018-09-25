@@ -1,10 +1,8 @@
 import utils
 import cv2
 import time
-import numpy as np
 import sys
 import settings
-import skimage.io
 
 #VISUALIZE_SLIDDING_WINDOW = False  # Si esta en True se muestra la ventana deslizante en tiempo real
 
@@ -53,7 +51,8 @@ def main():
         # count_bounding_boxes = 0
 
         # Loop sobre la ventana deslizante en diferentes posiciones
-        for (x, y, window) in utils.get_sliding_window(resized_image, stepSize=(32, 64), windowSize=(settings.win_w, settings.win_h)):
+        for (x, y, window) in utils.get_sliding_window(resized_image, stepSize=(32, 64), windowSize=(
+        settings.win_w, settings.win_h)):
             # Si la ventana no coincide con nuestro tamaño de ventana, se ignora
             if window.shape[0] != settings.win_h or window.shape[1] != settings.win_w:
                 continue
