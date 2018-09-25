@@ -2,7 +2,7 @@ MIN_TOP = 10
 MAX_TOP = 100
 DISPLAY_WIDTH = 640
 RESET_POSITION = [-150, DISPLAY_WIDTH+150]
-MIN_DIST = 30
+MIN_DIST = 10
 import numpy as np
 from sprite import *
 import random, math
@@ -15,6 +15,7 @@ class FireBall():
         # self.start_right = dragon.start_right
 
         self.was_fired = False
+        self.draw_fireball = False
 
         current_time = round(dt.utcnow().timestamp() * 1000)
 
@@ -22,51 +23,44 @@ class FireBall():
             ["./fireball/down/tile048.png","./fireball/down/tile049.png","./fireball/down/tile050.png","./fireball/down/tile051.png","./fireball/down/tile052.png","./fireball/down/tile053.png","./fireball/down/tile054.png","./fireball/down/tile055.png"],
             500,
             current_time,
-            speed=0
+            speed=0,
+            img_size=(70,70)
         )
-        # self.left_ball = Sprite.fromPaths(
-        #     ["./fireball/left/tile056.png","./fireball/left/tile057.png","./fireball/left/tile058.png","./fireball/left/tile059.png","./fireball/left/tile060.png","./fireball/left/tile061.png","./fireball/left/tile062.png","./fireball/left/tile063.png"],
-        #     500,
-        #     current_time,
-        #     speed=0
-        # )
-        # self.right_ball = Sprite.fromPaths(
-        #     ["./fireball/right/tile040.png","./fireball/right/tile041.png","./fireball/right/tile042.png","./fireball/right/tile042.png","./fireball/right/tile043.png","./fireball/right/tile044.png","./fireball/right/tile045.png","./fireball/right/tile046.png"],
-        #     500,
-        #     current_time,
-        #     speed=0
-        # )
-        # self.current_ball = None
         self.target_position = None
 
         explosion_paths = []
-        for i in range(0,64): explosion_paths.append("./explosion/tile0"+(("0"+str(i)) if i <10 else str(i))+".png")
+        for i in range(0,64):
+            explosion_paths.append("./explosion/tile0"+(("0"+str(i)) if i <10 else str(i))+".png")
+
         self.explosion = Sprite.fromPaths(
             explosion_paths,
             1500,
             current_time,
             speed=0,
-            loop=False
+            loop=False,
+            img_size=(80,80)
         )
         self.showing_explosion = False
 
 
     def fire(self, position):
-        self.was_fired = True
-        self.target_position = np.array(position)
+        self.draw_fireball = self.was_fired = True
+        self.target_position = position
         self.down_ball.move(self.dragon.get_position())
-        self.down_ball.look_towards_position(self.target_position)
+        self.down_ball.look_towards_position(np.array(self.target_position))
         self.down_ball.set_speed(40)
 
     def show_explosion(self,time):
-        self.explosion.reset_animation(time)
+        self.down_ball.set_speed(0)
+        self.explosion.reset_animation(time-10)
+        self.explosion.move(self.target_position)
+        self.draw_fireball = False
         self.showing_explosion = True
 
     def update(self, time):
-        if(self.was_fired):
+        if(self.was_fired and self.draw_fireball):
             self.down_ball.update(time)
             dist = math.hypot(self.target_position[0] - self.down_ball.get_position()[0], self.target_position[1] - self.down_ball.get_position()[1])
-            print(dist)
             if(dist < MIN_DIST):
                 self.show_explosion(time)
 
@@ -74,16 +68,18 @@ class FireBall():
             self.explosion.update(time)
 
     def draw(self, image):
-        if(self.was_fired):
+        if(self.draw_fireball):
             self.sprite_drawer.draw(image, self.down_ball)
-        elif(self.showing_explosion):
+
+        if(self.showing_explosion):
             self.sprite_drawer.draw(image, self.explosion)
             if(self.explosion.in_last_frame()):
-                self.showing_explosion = False
-                self.was_fired = False
+                self.showing_explosion = self.draw_fireball = self.was_fired = False
+                self.dragon.target_explode(self.target_position)
 
 class Dragon():
-    def __init__(self,left_paths, right_paths, start_right, sprite_drawer):
+    def __init__(self,left_paths, right_paths, start_right, sprite_drawer, dragon_manager=None):
+        self.dragon_manager = dragon_manager
         self.start_right = start_right
         self.sprite_drawer = sprite_drawer
 
@@ -97,7 +93,7 @@ class Dragon():
 
         self.reset_sprites()
 
-        self.balls=[FireBall(dragon=self), FireBall(dragon=self)]
+        self.balls=[FireBall(dragon=self)]
 
     def get_position(self):
         return self.current_sprite.get_position()
@@ -137,6 +133,9 @@ class Dragon():
                 return True
         return False
 
+    def target_explode(self,pos):
+        self.dragon_manager.target_explode(pos)
+
 class DragonManager():
     def __init__(self):
         self.sprite_drawer = SpriteDrawer()
@@ -145,15 +144,18 @@ class DragonManager():
                 ["./dragon/blue/tile009.png","./dragon/blue/tile010.png","./dragon/blue/tile011.png"],
                 ["./dragon/blue/tile003.png","./dragon/blue/tile004.png","./dragon/blue/tile005.png"],
                 True,
-                self.sprite_drawer
+                self.sprite_drawer,
+                self
             ),
             Dragon(
                 ["./dragon/blue/tile009.png","./dragon/blue/tile010.png","./dragon/blue/tile011.png"],
                 ["./dragon/blue/tile003.png","./dragon/blue/tile004.png","./dragon/blue/tile005.png"],
                 False,
-                self.sprite_drawer
+                self.sprite_drawer,
+                self
             )
         ]
+        self.targets = []
     def update(self):
         time = round(dt.utcnow().timestamp() * 1000)
         for d in self.dragons:
@@ -166,10 +168,18 @@ class DragonManager():
 
     def fire_to(self, positions):
         for pos in positions:
+            if( pos in self.targets):
+                continue
+            self.targets.append(pos)
             shooted = False
             for d in self.dragons:
                 if(d.fire_to(pos)):
+                    print("fire_to - d")
                     shooted = True
                     break
-            if(not shooted):
+            if(shooted):
                 break
+
+    def target_explode(self, pos):
+        if( pos in self.targets):
+            self.targets.remove(pos)

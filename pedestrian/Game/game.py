@@ -62,7 +62,7 @@ def main():
             count_frames += 1
         else:
             count_frames = 0
-            b = [(200.0,200.0),(210.0,190.0)]
+            b = [(200.0,200.0),(310.0,400.0)]
             dragon_manager.fire_to(b)
         #     cap.grab()
         #     continue
