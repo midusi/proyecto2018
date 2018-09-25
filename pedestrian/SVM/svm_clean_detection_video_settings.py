@@ -32,7 +32,7 @@ def main():
     old_bounding_boxes = np.array([])  # Para le tracking
 
     # Abro el video
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture(1)
     count_frames = 0
 
     # Bindeo el evento para la presion de una tecla

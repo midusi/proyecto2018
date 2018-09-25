@@ -8,6 +8,8 @@ import settings
 import numpy as np
 from datetime import datetime as dt
 from keyPressListenerVideo import bind_keypress_event
+from skimage.feature import hog as hog_skimage
+from skimage import exposure
 
 
 class Thread(QThread):
@@ -38,7 +40,7 @@ class Thread(QThread):
 
         # Biendeamos el evento de presion de tecla
         bind_keypress_event(self, cap)
-        # cap2 = cv2.VideoCapture(1)
+
         i = True
         i2 = True
         oldRect = []
@@ -49,19 +51,17 @@ class Thread(QThread):
 
         while True:
             """Consigue la captura"""
-            frame, oldRect, i = getImage(f, i, hog, oldRect, cap)
-            frame2, oldRect2, i2 = getImage(f2, i2, hog, oldRect2, cap)
+            frame, oldRect, i, frame2 = getImage(f, i, hog, oldRect, cap)
 
             rgbImage = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             convertToQtFormat = QImage(rgbImage.data, rgbImage.shape[1], rgbImage.shape[0], QImage.Format_RGB888)
             p = convertToQtFormat.scaled(1440, 1080, Qt.KeepAspectRatio)
             self.changePixmap.emit(p)
 
-            rgbImage2 = cv2.cvtColor(frame2, cv2.COLOR_BGR2RGB)
-            convertToQtFormat2 = QImage(rgbImage2.data, rgbImage2.shape[1], rgbImage2.shape[0], QImage.Format_RGB888)
-            p2 = convertToQtFormat2.scaled(512, 384, Qt.KeepAspectRatio)
-            # self.changePixmap2.emit(p)
-            # self.changePixmap3.emit(p)
+            if frame2.any():
+                convertToQtFormat2 = QImage(frame2.data, frame2.shape[1], frame2.shape[0], QImage.Format_RGB888)
+                p2 = convertToQtFormat2.scaled(480, 540, Qt.KeepAspectRatio)
+                self.changePixmap2.emit(p2)
 
 
 class App(QWidget):
@@ -93,22 +93,14 @@ class App(QWidget):
         self.label.move(0, 0)
         self.label.resize(1440, 1080)
         self.label2 = QLabel(self)
-        self.label2.move(1440, 0)
-        self.label2.resize(512, 384)
+        self.label2.move(0, 0)
+        self.label2.resize(480, 540)
         self.label3 = QLabel(self)
         self.label3.move(1440, 384)
         self.label3.resize(512, 384)
-        hbox.addWidget(self.label)
-        self.slider = QSlider(Qt.Horizontal, self)
-        self.slider.setTickInterval(10)
-        self.slider.setGeometry(300, 20, 100, 30)
-        self.slider.setMinimum(20)
-        self.slider.setMaximum(100)
-        self.slider.setValue(40)
-        self.slider.valueChanged.connect(self.changeValue)
 
-        """self.qle = QLineEdit(self)
-        self.qle.editingFinished.connect(self.onChanged)"""
+        hbox.addWidget(self.label)
+        hbox.addWidget(self.label2)
 
         th = Thread(self)
         th.changePixmap.connect(self.setImage)
@@ -138,6 +130,44 @@ def overlap(box, boxes):
                     0)
     uu = box[2] * box[3] + boxes[:, 2] * boxes[:, 3]
     return ww * hh / (uu - ww * hh)
+
+
+def getImage(f, i, hog, oldRect, cap):
+    timeFrame = dt.now()
+    ret, frame = cap.read()
+    frame2 = np.array([])
+    if ret:
+        # Saltea 1 frame
+        if i == True:
+            i = False
+
+            # Pasa el frame a escala de grises y lo reescala
+            image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+            # Genera la visualizacion del HOG
+            # hogs, frame2 = hog_skimage(image, orientations=8, pixels_per_cell=(16, 16), cells_per_block=(1, 1), visualise=True)
+            # frame2 = exposure.rescale_intensity(frame2, in_range=(0, 10))
+
+            image = cv2.resize(image, None, fx=settings.resize, fy=settings.resize, interpolation=cv2.INTER_CUBIC)
+
+
+            # Calcula el Hog y hace la deteccion con SVM devolviendo los bounding boxes de los match
+            newRect = HogDescriptor(image, hog)
+
+            oldRect = survivingBBoxes_ms(oldRect, newRect, settings.trackThreshold, timeFrame)
+        else:
+            i = True
+
+        FPS = f()
+
+        # Dibuja los rectangulos en pantalla de lo que detectó
+        for (x, y, w, h, s) in oldRect:
+            # cv2.rectangle(frame, (int(x//settings.resize), int(y//settings.resize)), (int(((x + w)*settings.boundBoxSize)//settings.resize), int(((y + h)*settings.boundBoxSize)//settings.resize)), (0, 255, 0), 2)
+            cv2.rectangle(frame, (int(x // settings.resize), int(y // settings.resize)),
+                          (int((x + w) // settings.resize), int((y + h) // settings.resize)), (0, 255, 0), 2)
+        frame = cv2.flip(frame, 1)
+        cv2.putText(frame, str(round(FPS, 2)), (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
+    return frame, oldRect, i, frame2
 
 
 def survivingBBoxes_ms(oldRect, newRect, threshold, frameTime):
@@ -181,36 +211,6 @@ class fps():
             self.counter = 0
             self.start = time.time()
         return self.FPS
-
-
-def getImage(f, i, hog, oldRect, cap):
-    timeFrame = dt.now()
-    ret, frame = cap.read()
-    if ret:
-        # Saltea 1 frame
-        if i == True:
-            i = False
-            # Pasa el frame a escala de grises y lo reescala
-            image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            image = cv2.resize(image, None, fx=settings.resize, fy=settings.resize, interpolation=cv2.INTER_CUBIC)
-
-            # Calcula el Hog y hace la deteccion con SVM devolviendo los bounding boxes de los match
-            newRect = HogDescriptor(image, hog)
-
-            oldRect = survivingBBoxes_ms(oldRect, newRect, settings.trackThreshold, timeFrame)
-        else:
-            i = True
-
-        FPS = f()
-
-        # Dibuja los rectangulos en pantalla de lo que detectó
-        for (x, y, w, h, s) in oldRect:
-            # cv2.rectangle(frame, (int(x//settings.resize), int(y//settings.resize)), (int(((x + w)*settings.boundBoxSize)//settings.resize), int(((y + h)*settings.boundBoxSize)//settings.resize)), (0, 255, 0), 2)
-            cv2.rectangle(frame, (int(x // settings.resize), int(y // settings.resize)),
-                          (int((x + w) // settings.resize), int((y + h) // settings.resize)), (0, 255, 0), 2)
-        frame = cv2.flip(frame, 1)
-        cv2.putText(frame, str(round(FPS, 2)), (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
-    return frame, oldRect, i
 
 
 if __name__ == '__main__':
