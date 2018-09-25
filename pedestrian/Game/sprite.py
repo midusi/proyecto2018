@@ -110,6 +110,10 @@ class Sprite:
     def get_position(self):
         return self.position
 
+    def is_point_in_sprite(self, point):
+        curr_image_shape = self.get_current_image().shape[0:2]
+        return  point[0] >= self.position[0] and point[0] <= self.position[0] + curr_image_shape[1] and point[1] >= self.position[1] and point[1] <= self.position[1] + curr_image_shape[0]
+
 class SpriteDrawer:
     def __init__(self):
         pass

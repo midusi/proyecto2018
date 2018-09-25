@@ -39,7 +39,7 @@ def predict_proba_funcion(x):
 
 
 def main():
-    dragon_manager = DragonManager()
+    game = Game()
     # paths = []
     # for i in range (22):
     #     i_s = str(i)
@@ -56,14 +56,13 @@ def main():
     cap = cv2.VideoCapture(0)
     count_frames = 0
 
+    pos_x = 250
     while cap.isOpened():
         # Ignora la cantidad de frames seteados
         if count_frames < COUNT_IGNORED_FRAMES:
             count_frames += 1
         else:
             count_frames = 0
-            b = [(200.0,200.0),(310.0,400.0)]
-            dragon_manager.fire_to(b)
         #     cap.grab()
         #     continue
 
@@ -76,8 +75,9 @@ def main():
         # current_time=round(dt.utcnow().timestamp() * 1000)
         # bee.update(current_time)
         # sd.draw(frame, bee)
-        dragon_manager.update()
-        fram = dragon_manager.draw(frame)
+        game.update([pos_x])
+        pos_x+=1
+        fram = game.draw(frame)
         # Muestro el frame
         cv2.imshow('frame', frame)
 
