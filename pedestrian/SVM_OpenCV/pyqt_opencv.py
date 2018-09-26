@@ -1,18 +1,19 @@
-IS_GAME_ACTIVE = False
+#IS_GAME_ACTIVE = False
+RES_WIDTH = 1366
+RES_HEIGHT = 768
+
 
 import cv2
 from PyQt5.QtCore import (QThread, Qt, pyqtSignal, pyqtSlot)
 from PyQt5.QtGui import (QPixmap, QImage)
-from PyQt5.QtWidgets import QWidget, QLabel, QApplication, QSlider, QHBoxLayout, QLineEdit
+from PyQt5.QtWidgets import QWidget, QLabel, QApplication
 import sys
 import time
 import settings
 import numpy as np
 from datetime import datetime as dt
 from keyPressListenerVideo import bind_keypress_event
-from skimage.feature import hog as hog_skimage
-from skimage import exposure
-from dragon import *
+import dragon
 
 
 class Thread(QThread):
@@ -41,8 +42,9 @@ class Thread(QThread):
         # Inicializacion de captura de video desde camara web o archivo de video
         cap = cv2.VideoCapture(0)
 
+        game = dragon.Game()
         # Biendeamos el evento de presion de tecla
-        bind_keypress_event(self, cap)
+        bind_keypress_event(self, cap, game)
 
         i = True
 
@@ -51,27 +53,22 @@ class Thread(QThread):
         f = fps()
 
 
-        dragon.DISPLAY_WIDTH = 1920
-        dragon.SHOOTER_POS_Y = 900
+        dragon.DISPLAY_WIDTH = RES_WIDTH
+        dragon.SHOOTER_POS_Y = RES_HEIGHT -150
         dragon.MIN_TOP = 50
-        dragon.MAX_TOP = 200
-        dragon.RESET_POSITION = [-150, DISPLAY_WIDTH+150]
+        dragon.MAX_TOP = 100
+        dragon.RESET_POSITION = [-150, dragon.DISPLAY_WIDTH+150]
         dragon.MIN_DIST = 30
 
-        game = dragon.Game()
 
 
         while True:
             """Consigue la captura"""
-            frame, oldRect, i, frame2 = getImage(f, i, hog, oldRect, cap, IS_GAME_ACTIVE)
-
-            if(IS_GAME_ACTIVE):
-                game.update(oldRect)
-                frame = game.draw(frame)
+            frame, oldRect, i, frame2 = getImage(f, i, hog, oldRect, cap, game, game.get_is_game_active())
 
             rgbImage = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             convertToQtFormat = QImage(rgbImage.data, rgbImage.shape[1], rgbImage.shape[0], QImage.Format_RGB888)
-            p = convertToQtFormat.scaled(1440, 1080, Qt.KeepAspectRatio)
+            p = convertToQtFormat.scaled(RES_WIDTH, RES_HEIGHT, Qt.KeepAspectRatio)
             self.changePixmap.emit(p)
 
 
@@ -96,22 +93,17 @@ class App(QWidget):
 
     def initUI(self):
         self.setWindowTitle("Test")
-        self.setGeometry(0, 0, 1920, 1080)
-        self.showFullScreen()
+        self.setGeometry(0, 0, RES_WIDTH, RES_HEIGHT)
+        #self.setGeometry(0, 0, 1920, 1080)
+        #self.showFullScreen()
         # self.resize(1800, 1200)
         # create a label
-        hbox = QHBoxLayout(self)
+        #hbox = QHBoxLayout(self)
         self.label = QLabel(self)
         self.label.move(0, 0)
-        self.label.resize(1440, 1080)
-        # self.label2 = QLabel(self)
-        # self.label2.move(0, 0)
-        # self.label2.resize(480, 540)
-        # self.label3 = QLabel(self)
-        # self.label3.move(1440, 384)
-        # self.label3.resize(512, 384)
+        self.label.resize(RES_WIDTH, RES_HEIGHT)
 
-        hbox.addWidget(self.label)
+        #hbox.addWidget(self.label)
         # hbox.addWidget(self.label2)
 
         th = Thread(self)
@@ -129,7 +121,12 @@ def HogDescriptor(image, hog):
     (rects, weights) = hog.detectMultiScale(image, winStride=(settings.winStride, settings.winStride),
                                             padding=(settings.padding, settings.padding), scale=settings.scaleDetection,
                                             useMeanshiftGrouping=False)
-
+    for item in rects:
+        item[2] = int(item[2] // settings.resize)
+        item[3] = int(item[3] // settings.resize)
+        item[0] = int(item[0] // settings.resize)
+        item[1] = int(item[1] // settings.resize)
+    
     return np.array(rects)
 
 
@@ -144,7 +141,7 @@ def overlap(box, boxes):
     return ww * hh / (uu - ww * hh)
 
 
-def getImage(f, i, hog, oldRect, cap, is_game_active):
+def getImage(f, i, hog, oldRect, cap, game, is_game_active):
     timeFrame = dt.now()
     ret, frame = cap.read()
     frame2 = np.array([])
@@ -167,6 +164,9 @@ def getImage(f, i, hog, oldRect, cap, is_game_active):
             newRect = HogDescriptor(image, hog)
 
             oldRect = survivingBBoxes_ms(oldRect, newRect, settings.trackThreshold, timeFrame)
+			
+            if(is_game_active):
+                game.update(oldRect)
         else:
             i = True
 
@@ -174,9 +174,11 @@ def getImage(f, i, hog, oldRect, cap, is_game_active):
         if(not is_game_active):
             # Dibuja los rectangulos en pantalla de lo que detectó
             for (x, y, w, h, s) in oldRect:
-                # cv2.rectangle(frame, (int(x//settings.resize), int(y//settings.resize)), (int(((x + w)*settings.boundBoxSize)//settings.resize), int(((y + h)*settings.boundBoxSize)//settings.resize)), (0, 255, 0), 2)
-                cv2.rectangle(frame, (int(x // settings.resize), int(y // settings.resize)),
-                              (int((x + w) // settings.resize), int((y + h) // settings.resize)), (0, 255, 0), 2)
+                #cv2.rectangle(frame, (int(x // settings.resize), int(y // settings.resize)), (int((x + w) // settings.resize), int((y + h) // settings.resize)), (0, 255, 0), 2)
+                cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+        else:
+            frame = game.draw(frame)
+        
         frame = cv2.flip(frame, 1)
         cv2.putText(frame, str(round(FPS, 2)), (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
     return frame, oldRect, i, frame2

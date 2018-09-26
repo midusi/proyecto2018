@@ -5,7 +5,7 @@ DISPLAY_WIDTH = 640
 RESET_POSITION = [-150, DISPLAY_WIDTH+150]
 MIN_DIST = 10
 import numpy as np
-from sprite import *
+import sprite
 import random, math
 from datetime import datetime as dt
 
@@ -20,12 +20,12 @@ class FireBall():
 
         current_time = round(dt.utcnow().timestamp() * 1000)
 
-        self.down_ball = Sprite.fromPaths(
+        self.down_ball = sprite.Sprite.fromPaths(
             ["./fireball/down/tile048.png","./fireball/down/tile049.png","./fireball/down/tile050.png","./fireball/down/tile051.png","./fireball/down/tile052.png","./fireball/down/tile053.png","./fireball/down/tile054.png","./fireball/down/tile055.png"],
             300,
             current_time,
             speed=0,
-            img_size=(60,60)
+            img_size=(40,40)
         )
         self.target_position = None
 
@@ -33,7 +33,7 @@ class FireBall():
         for i in range(0,64):
             explosion_paths.append("./explosion/tile0"+(("0"+str(i)) if i <10 else str(i))+".png")
 
-        self.explosion = Sprite.fromPaths(
+        self.explosion = sprite.Sprite.fromPaths(
             explosion_paths,
             400,
             current_time,
@@ -92,10 +92,10 @@ class Dragon():
 
         current_time = round(dt.utcnow().timestamp() * 1000)
         #va a la izquierda
-        self.left_sprite = Sprite.fromPaths(left_paths, 300, current_time, speed=75)
+        self.left_sprite = sprite.Sprite.fromPaths(left_paths, 300, current_time, img_size=(144,100), speed=75)
         self.left_sprite.look_towards((-1, 0))
         #va a la derecha
-        self.right_sprite = Sprite.fromPaths(right_paths, 300, current_time, speed=75)
+        self.right_sprite = sprite.Sprite.fromPaths(right_paths, 300, current_time, img_size=(144,100), speed=75)
         self.right_sprite.look_towards((1, 0))
 
         self.reset_sprites()
@@ -229,7 +229,7 @@ class Shooter():
         self.shooter_manager = shooter_manager
         current_time = round(dt.utcnow().timestamp() * 1000)
         self.start_position = position
-        self.sprite = Sprite.fromPaths(paths, 2500, current_time, speed=0, img_size=(80,80))
+        self.sprite = sprite.Sprite.fromPaths(paths, 2500, current_time, speed=0, img_size=(65,80))
         self.sprite.move(self.start_position)
         self.sprite.reset_animation(current_time)
         self.time_to_shoot = 4000
@@ -260,7 +260,7 @@ class Shooter():
             self.shooter_manager.remove(self)
 
     def shoot(self, time):
-        laser = Sprite.fromPaths(["./laser/beams.png"], 1000, time, speed=125, img_size=(13,50))
+        laser = sprite.Sprite.fromPaths(["./laser/beams.png"], 1000, time, speed=125, img_size=(13,59))
         laser.look_towards((0,-1))
         laser.move((self.sprite.get_position()[0]+18,self.sprite.get_position()[1]-12))
         self.lasers.append(laser)
@@ -325,14 +325,15 @@ class ShootersManager():
 
 class Game():
     def __init__(self):
-        self.sprite_drawer = SpriteDrawer()
+        self.sprite_drawer = sprite.SpriteDrawer()
         self.dragon_manager = DragonManager(self.sprite_drawer, self)
         self.shooters_manager = ShootersManager(self.sprite_drawer, self)
+        self.is_game_active = False
 
     def update(self, positions_list):
         fire_to = []
         for i in range(len(positions_list)):
-            pos_x = positions_list[i]
+            pos_x = positions_list[i][0]+int(positions_list[i][2]//2)
             pos = (pos_x, SHOOTER_POS_Y)
             fire_to.append(pos)
             if(i >= self.shooters_manager.count_shooters()):
@@ -340,7 +341,7 @@ class Game():
             if(i >= self.dragon_manager.count_dragons()):
                 self.dragon_manager.add_dragon()
 
-            self.shooters_manager.move_shooter(i, pos_x)
+            self.shooters_manager.move_shooter(i, pos[0])
 
         self.dragon_manager.fire_to(fire_to)
 
@@ -363,3 +364,9 @@ class Game():
     def add_shooters(self, positions):
         for p in positions:
             self.shooters_manager.add_shooter(p)
+    
+    def change_active(self):
+        self.is_game_active = not self.is_game_active
+    
+    def get_is_game_active(self):
+        return self.is_game_active

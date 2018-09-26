@@ -4,7 +4,7 @@ import numpy as np
 from datetime import datetime as dt
 
 # Parametros del SVM
-CHECKPOINT_PATH = '/home/genaro/PycharmProjects/checkpoints_proyecto2018/svmCheckpoint.pkl'
+CHECKPOINT_PATH = 'svmCheckpoint.pkl'
 
 # Parametros de video
 COUNT_IGNORED_FRAMES = 3

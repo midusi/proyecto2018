@@ -10,10 +10,11 @@ import cv2
 
 
 class ParamsModifier:
-    def __init__(self, qt_app, cv2_cap):
+    def __init__(self, qt_app, cv2_cap, game):
         self.selected = None
         self.qt_app = qt_app
         self.cv2_cap = cv2_cap
+        self.game = game
 
     def on_press(self, key):
         return
@@ -26,8 +27,9 @@ class ParamsModifier:
             cv2.destroyAllWindows()
             self.qt_app.quit()
             return False
-        if str(key) == "g":
-            IS_GAME_ACTIVE = not IS_GAME_ACTIVE
+        if str(key) == "'g'":
+            self.game.change_active()
+            #self.is_game_active = not self.is_game_active
 
     def wait_for_keypress(self):
         """Bindea el evento de presion de la tecla"""
@@ -39,15 +41,15 @@ class ParamsModifier:
 
 
 class MyThread(Thread):
-    def __init__(self, qt_app, cv2_cap):
+    def __init__(self, qt_app, cv2_cap, game):
         Thread.__init__(self)
-        self.param_modifier = ParamsModifier(qt_app, cv2_cap)
+        self.param_modifier = ParamsModifier(qt_app, cv2_cap, game)
 
     def run(self):
         self.param_modifier.wait_for_keypress()
 
 
-def bind_keypress_event(qt_app, cv2_cap):
+def bind_keypress_event(qt_app, cv2_cap, game):
     """Bindea el evento de presion de una tecla"""
-    thread = MyThread(qt_app, cv2_cap)
+    thread = MyThread(qt_app, cv2_cap, game)
     thread.start()
