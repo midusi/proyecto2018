@@ -1,3 +1,5 @@
+IS_GAME_ACTIVE = False
+
 import cv2
 from PyQt5.QtCore import (QThread, Qt, pyqtSignal, pyqtSlot)
 from PyQt5.QtGui import (QPixmap, QImage)
@@ -10,12 +12,13 @@ from datetime import datetime as dt
 from keyPressListenerVideo import bind_keypress_event
 from skimage.feature import hog as hog_skimage
 from skimage import exposure
+from dragon import *
 
 
 class Thread(QThread):
     changePixmap = pyqtSignal(QImage)
-    changePixmap2 = pyqtSignal(QImage)
-    changePixmap3 = pyqtSignal(QImage)
+    # changePixmap2 = pyqtSignal(QImage)
+    # changePixmap3 = pyqtSignal(QImage)
 
     def run(self):
         winSize = (64, 128)
@@ -42,26 +45,35 @@ class Thread(QThread):
         bind_keypress_event(self, cap)
 
         i = True
-        i2 = True
+
         oldRect = []
-        oldRect2 = []
 
         f = fps()
-        f2 = fps()
+
+
+        dragon.DISPLAY_WIDTH = 1920
+        dragon.SHOOTER_POS_Y = 900
+        dragon.MIN_TOP = 50
+        dragon.MAX_TOP = 200
+        dragon.RESET_POSITION = [-150, DISPLAY_WIDTH+150]
+        dragon.MIN_DIST = 30
+
+        game = dragon.Game()
+
 
         while True:
             """Consigue la captura"""
-            frame, oldRect, i, frame2 = getImage(f, i, hog, oldRect, cap)
+            frame, oldRect, i, frame2 = getImage(f, i, hog, oldRect, cap, IS_GAME_ACTIVE)
+
+            if(IS_GAME_ACTIVE):
+                game.update(oldRect)
+                frame = game.draw(frame)
 
             rgbImage = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             convertToQtFormat = QImage(rgbImage.data, rgbImage.shape[1], rgbImage.shape[0], QImage.Format_RGB888)
             p = convertToQtFormat.scaled(1440, 1080, Qt.KeepAspectRatio)
             self.changePixmap.emit(p)
 
-            if frame2.any():
-                convertToQtFormat2 = QImage(frame2.data, frame2.shape[1], frame2.shape[0], QImage.Format_RGB888)
-                p2 = convertToQtFormat2.scaled(480, 540, Qt.KeepAspectRatio)
-                self.changePixmap2.emit(p2)
 
 
 class App(QWidget):
@@ -74,13 +86,13 @@ class App(QWidget):
     def setImage(self, image):
         self.label.setPixmap(QPixmap.fromImage(image))
 
-    @pyqtSlot(QImage)
-    def setImage2(self, image):
-        self.label2.setPixmap(QPixmap.fromImage(image))
-
-    @pyqtSlot(QImage)
-    def setImage3(self, image):
-        self.label3.setPixmap(QPixmap.fromImage(image))
+    # @pyqtSlot(QImage)
+    # def setImage2(self, image):
+    #     self.label2.setPixmap(QPixmap.fromImage(image))
+    #
+    # @pyqtSlot(QImage)
+    # def setImage3(self, image):
+    #     self.label3.setPixmap(QPixmap.fromImage(image))
 
     def initUI(self):
         self.setWindowTitle("Test")
@@ -92,20 +104,20 @@ class App(QWidget):
         self.label = QLabel(self)
         self.label.move(0, 0)
         self.label.resize(1440, 1080)
-        self.label2 = QLabel(self)
-        self.label2.move(0, 0)
-        self.label2.resize(480, 540)
-        self.label3 = QLabel(self)
-        self.label3.move(1440, 384)
-        self.label3.resize(512, 384)
+        # self.label2 = QLabel(self)
+        # self.label2.move(0, 0)
+        # self.label2.resize(480, 540)
+        # self.label3 = QLabel(self)
+        # self.label3.move(1440, 384)
+        # self.label3.resize(512, 384)
 
         hbox.addWidget(self.label)
-        hbox.addWidget(self.label2)
+        # hbox.addWidget(self.label2)
 
         th = Thread(self)
         th.changePixmap.connect(self.setImage)
-        th.changePixmap2.connect(self.setImage2)
-        th.changePixmap3.connect(self.setImage3)
+        # th.changePixmap2.connect(self.setImage2)
+        # th.changePixmap3.connect(self.setImage3)
         th.start()
 
     def changeValue(self):
@@ -132,7 +144,7 @@ def overlap(box, boxes):
     return ww * hh / (uu - ww * hh)
 
 
-def getImage(f, i, hog, oldRect, cap):
+def getImage(f, i, hog, oldRect, cap, is_game_active):
     timeFrame = dt.now()
     ret, frame = cap.read()
     frame2 = np.array([])
@@ -159,12 +171,12 @@ def getImage(f, i, hog, oldRect, cap):
             i = True
 
         FPS = f()
-
-        # Dibuja los rectangulos en pantalla de lo que detectó
-        for (x, y, w, h, s) in oldRect:
-            # cv2.rectangle(frame, (int(x//settings.resize), int(y//settings.resize)), (int(((x + w)*settings.boundBoxSize)//settings.resize), int(((y + h)*settings.boundBoxSize)//settings.resize)), (0, 255, 0), 2)
-            cv2.rectangle(frame, (int(x // settings.resize), int(y // settings.resize)),
-                          (int((x + w) // settings.resize), int((y + h) // settings.resize)), (0, 255, 0), 2)
+        if(not is_game_active):
+            # Dibuja los rectangulos en pantalla de lo que detectó
+            for (x, y, w, h, s) in oldRect:
+                # cv2.rectangle(frame, (int(x//settings.resize), int(y//settings.resize)), (int(((x + w)*settings.boundBoxSize)//settings.resize), int(((y + h)*settings.boundBoxSize)//settings.resize)), (0, 255, 0), 2)
+                cv2.rectangle(frame, (int(x // settings.resize), int(y // settings.resize)),
+                              (int((x + w) // settings.resize), int((y + h) // settings.resize)), (0, 255, 0), 2)
         frame = cv2.flip(frame, 1)
         cv2.putText(frame, str(round(FPS, 2)), (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
     return frame, oldRect, i, frame2

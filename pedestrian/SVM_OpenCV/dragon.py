@@ -4,11 +4,6 @@ MAX_TOP = 100
 DISPLAY_WIDTH = 640
 RESET_POSITION = [-150, DISPLAY_WIDTH+150]
 MIN_DIST = 10
-BALL_SIZE = 60
-EXPLOSION_SIZE = 80
-SHOOTER_SIZE = 60
-LASER_SIZE_X = 13
-LASER_SIZE_Y = 60
 import numpy as np
 from sprite import *
 import random, math
@@ -30,7 +25,7 @@ class FireBall():
             300,
             current_time,
             speed=0,
-            img_size=(BALL_SIZE,BALL_SIZE)
+            img_size=(60,60)
         )
         self.target_position = None
 
@@ -44,7 +39,7 @@ class FireBall():
             current_time,
             speed=0,
             loop=False,
-            img_size=(EXPLOSION_SIZE,EXPLOSION_SIZE)
+            img_size=(80,80)
         )
         self.showing_explosion = False
 
@@ -234,7 +229,7 @@ class Shooter():
         self.shooter_manager = shooter_manager
         current_time = round(dt.utcnow().timestamp() * 1000)
         self.start_position = position
-        self.sprite = Sprite.fromPaths(paths, 2500, current_time, speed=0, img_size=(SHOOTER_SIZE,SHOOTER_SIZE))
+        self.sprite = Sprite.fromPaths(paths, 2500, current_time, speed=0, img_size=(80,80))
         self.sprite.move(self.start_position)
         self.sprite.reset_animation(current_time)
         self.time_to_shoot = 4000
@@ -265,7 +260,7 @@ class Shooter():
             self.shooter_manager.remove(self)
 
     def shoot(self, time):
-        laser = Sprite.fromPaths(["./laser/beams.png"], 1000, time, speed=125, img_size=(LASER_SIZE_X,LASER_SIZE_Y))
+        laser = Sprite.fromPaths(["./laser/beams.png"], 1000, time, speed=125, img_size=(13,50))
         laser.look_towards((0,-1))
         laser.move((self.sprite.get_position()[0]+18,self.sprite.get_position()[1]-12))
         self.lasers.append(laser)
@@ -337,7 +332,7 @@ class Game():
     def update(self, positions_list):
         fire_to = []
         for i in range(len(positions_list)):
-            pos_x = positions_list[i][0] + (positions_list[i][2] / 2)
+            pos_x = positions_list[i]
             pos = (pos_x, SHOOTER_POS_Y)
             fire_to.append(pos)
             if(i >= self.shooters_manager.count_shooters()):
