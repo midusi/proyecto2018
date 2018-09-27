@@ -224,7 +224,7 @@ class DragonManager():
         ))
 
 class Shooter():
-    def __init__(self, shooter_manager, sprite_drawer, paths, position):
+    def __init__(self, shooter_manager, sprite_drawer, paths, position, id):
         self.sprite_drawer = sprite_drawer
         self.shooter_manager = shooter_manager
         current_time = round(dt.utcnow().timestamp() * 1000)
@@ -236,6 +236,7 @@ class Shooter():
         self.last_shoot = 0
         self.lasers = []
         self.alive = True
+        self.id = id
 
     def draw(self, image):
         if(self.alive):
@@ -303,8 +304,8 @@ class ShootersManager():
             image = s.draw(image)
         return image
 
-    def add_shooter(self, position):
-        s = Shooter(self, self.sprite_drawer, self.millenium_falcon_paths, position)
+    def add_shooter(self, position, id):
+        s = Shooter(self, self.sprite_drawer, self.millenium_falcon_paths, position,id)
         self.shooters.append(s)
 
     def check_if_hits(self, enemys):
@@ -317,11 +318,19 @@ class ShootersManager():
     def count_shooters(self):
         return len(self.shooters)
 
-    def move_shooter(self, index, pos):
-        self.shooters[index].move(pos)
+    def move_shooter(self, id, pos):
+        for shooter in self.shooters:
+            if(id == shooter.id):
+                shooter.move(pos)
 
     def remove(self, shooter):
         self.shooters.remove(shooter)
+    def keep_shooters(self,bbox_ids):
+        #self.shooters=filter(lambda s: s.id in bbox_ids, self.shooters)
+        self.shooters=[s for s in self.shooters if s.id in bbox_ids]
+        
+    def get_shooters_ids(self):
+        return [s.id for s in self.shooters]
 
 class Game():
     def __init__(self):
@@ -330,18 +339,24 @@ class Game():
         self.shooters_manager = ShootersManager(self.sprite_drawer, self)
         self.is_game_active = False
 
-    def update(self, positions_list):
+    def update(self, bounding_list):
         fire_to = []
-        for i in range(len(positions_list)):
-            pos_x = positions_list[i][0]+int(positions_list[i][2]//2)
+        #bbox_ids=map(lambda bbox: bbox[5],bounding_list)
+        bbox_ids=[bbox[5] for bbox in bounding_list]
+        self.shooters_manager.keep_shooters(bbox_ids)
+        for i in range(len(bounding_list)):
+            pos_x = bounding_list[i][0]+int(bounding_list[i][2]//2)
+            id = bounding_list[i][5]
             pos = (pos_x, SHOOTER_POS_Y)
             fire_to.append(pos)
-            if(i >= self.shooters_manager.count_shooters()):
-                self.shooters_manager.add_shooter(pos)
+            if not (id in self.shooters_manager.get_shooters_ids()):
+                self.shooters_manager.add_shooter(pos, id)
             if(i >= self.dragon_manager.count_dragons()):
                 self.dragon_manager.add_dragon()
 
-            self.shooters_manager.move_shooter(i, pos[0])
+            self.shooters_manager.move_shooter(id, pos[0])
+                
+            
 
         self.dragon_manager.fire_to(fire_to)
 

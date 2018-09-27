@@ -46,9 +46,9 @@ class Thread(QThread):
 
         game = dragon.Game()
         # Biendeamos el evento de presion de tecla
-        #bind_keypress_event(self, cap, game)
+        bind_keypress_event(self, cap, game)
 
-        i = True
+        i = 0
 
         oldRect = []
 
@@ -61,13 +61,15 @@ class Thread(QThread):
         dragon.MAX_TOP = 100
         dragon.RESET_POSITION = [-150, dragon.DISPLAY_WIDTH+150]
         dragon.MIN_DIST = 30
+        
+        lastID = 0
 
 
 
         while True:
             """Consigue la captura"""
-            frame, oldRect, i, frame2 = getImage(f, i, hog, oldRect, cap, game, game.get_is_game_active())
-
+            frame, oldRect, frame2 = getImage(f, i, hog, oldRect, cap, game, game.get_is_game_active(), lastID)
+            i+=1
             rgbImage = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             convertToQtFormat = QImage(rgbImage.data, rgbImage.shape[1], rgbImage.shape[0], QImage.Format_RGB888)
             p = convertToQtFormat.scaled(RES_WIDTH, RES_HEIGHT, Qt.KeepAspectRatio)
@@ -131,7 +133,7 @@ def HogDescriptor(image, hog):
     
     return np.array(rects)
 
-
+g
 def overlap(box, boxes):
     ww = np.maximum(np.minimum(box[0] + box[2], boxes[:, 0] + boxes[:, 2]) -
                     np.maximum(box[0], boxes[:, 0]),
@@ -143,21 +145,16 @@ def overlap(box, boxes):
     return ww * hh / (uu - ww * hh)
 
 
-def getImage(f, i, hog, oldRect, cap, game, is_game_active):
+def getImage(f, i, hog, oldRect, cap, game, is_game_active, lastID):
     timeFrame = dt.now()
     ret, frame = cap.read()
     frame2 = np.array([])
     if ret:
         # Saltea 1 frame
-        if i == True:
-            i = False
+        if i % settings.skip >0:
 
             # Pasa el frame a escala de grises y lo reescala
             image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
-            # Genera la visualizacion del HOG
-            # hogs, frame2 = hog_skimage(image, orientations=8, pixels_per_cell=(16, 16), cells_per_block=(1, 1), visualise=True)
-            # frame2 = exposure.rescale_intensity(frame2, in_range=(0, 10))
 
             image = cv2.resize(image, None, fx=settings.resize, fy=settings.resize, interpolation=cv2.INTER_CUBIC)
 
@@ -165,17 +162,15 @@ def getImage(f, i, hog, oldRect, cap, game, is_game_active):
             # Calcula el Hog y hace la deteccion con SVM devolviendo los bounding boxes de los match
             newRect = HogDescriptor(image, hog)
 
-            oldRect = survivingBBoxes_ms(oldRect, newRect, settings.trackThreshold, timeFrame)
+            oldRect = survivingBBoxes_ms(oldRect, newRect, settings.trackThreshold, timeFrame, lastID)
 			
             if(is_game_active):
                 game.update(oldRect)
-        else:
-            i = True
-
+                
         FPS = f()
         if(not is_game_active):
             # Dibuja los rectangulos en pantalla de lo que detectó
-            for (x, y, w, h, s) in oldRect:
+            for (x, y, w, h, s, id) in oldRect:
                 #cv2.rectangle(frame, (int(x // settings.resize), int(y // settings.resize)), (int((x + w) // settings.resize), int((y + h) // settings.resize)), (0, 255, 0), 2)
                 cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
         else:
@@ -183,13 +178,13 @@ def getImage(f, i, hog, oldRect, cap, game, is_game_active):
         
         frame = cv2.flip(frame, 1)
         cv2.putText(frame, str(round(FPS, 2)), (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
-    return frame, oldRect, i, frame2
+    return frame, oldRect, frame2
 
 
-def survivingBBoxes_ms(oldRect, newRect, threshold, frameTime):
+def survivingBBoxes_ms(oldRect, newRect, threshold, frameTime, lastID):
     date = dt.now() - frameTime
     if newRect.any():
-        newRect = np.pad(newRect, ((0, 0), (0, 1)), 'constant', constant_values=(settings.boundBoxLife))
+        newRect = np.pad(newRect, ((0, 0), (0, 2)), 'constant', constant_values=(settings.boundBoxLife))
         for item in oldRect:
             item[4] -= date.microseconds
             iou = overlap(item, newRect)
@@ -197,11 +192,21 @@ def survivingBBoxes_ms(oldRect, newRect, threshold, frameTime):
                 m = max(iou)
                 i = np.argmax(iou)
                 if (m > threshold):
-                    item[0:5] = newRect[i]
+                    item[0:5] = newRect[i][0:5]
                     newRect = np.vstack([newRect[0:i], newRect[i + 1:]])
 
         oldRect = list(filter(lambda rect: rect[4] > 0, oldRect))
-        return oldRect + [vbox for vbox in newRect]
+        for item in newRect:
+            item[5] = lastID
+            lastID += 1
+        bboxes=oldRect + [vbox for vbox in newRect]
+        #sizes = [ w*h for (x,y,w,h,s,id) in bboxes]
+        bboxes=sorted(bboxes,key= lambda bbox: bbox[2]*bbox[3],reverse=True)
+        #sorted_indices=np.argsort(sizes)
+        last_index=min(settings.max_bounding_boxes,len(bboxes))
+        bboxes=bboxes[0:last_index]
+        return bboxes
+        #return bboxes
 
     for item in oldRect:
         item[4] -= 3000
