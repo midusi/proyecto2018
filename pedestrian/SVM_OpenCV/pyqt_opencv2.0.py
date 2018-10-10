@@ -1,6 +1,6 @@
 #IS_GAME_ACTIVE = False
-RES_WIDTH = 1980
-RES_HEIGHT = 1080
+RES_WIDTH = 800
+RES_HEIGHT = 600
 
 
 import cv2
@@ -17,8 +17,8 @@ from skimage.feature import hog
 
 
 class Thread(QThread):
-    #changePixmap = pyqtSignal(QImage,QImage) 
-    changePixmap = pyqtSignal(QImage) 
+    changePixmap = pyqtSignal(QImage,QImage) 
+    #hangePixmap = pyqtSignal(QImage) 
     # changePixmap2 = pyqtSignal(QImage)
     # changePixmap3 = pyqtSignal(QImage)
 
@@ -49,7 +49,8 @@ class Thread(QThread):
 
         oldRect = []
         
-        processedHog = None
+        newHog = None
+        
 
         f = fps()
         
@@ -66,12 +67,16 @@ class Thread(QThread):
             convertToQtFormat = QImage(rgbImage.data, rgbImage.shape[1], rgbImage.shape[0], QImage.Format_RGB888)
             processedFrame = convertToQtFormat.scaled(RES_WIDTH, RES_HEIGHT, Qt.KeepAspectRatio)
             
-            """if (visual.any()):
-                convertToQtFormat = QImage(visual.data, visual.shape[1], visual.shape[0], QImage.Format_RGB888)
-                processedHog = convertToQtFormat.scaled(RES_WIDTH, RES_HEIGHT, Qt.KeepAspectRatio)"""
-            
-            #self.changePixmap.emit(processedFrame, processedHog)
-            self.changePixmap.emit(processedFrame)
+            if (visual.any()):
+                newHog = visual
+                        
+            if newHog is not None:                
+                convertToQtFormat = QImage(newHog.data, newHog.shape[1], newHog.shape[0], QImage.Format_RGB888)
+                processedHog = convertToQtFormat.scaled(RES_WIDTH, RES_HEIGHT, Qt.KeepAspectRatio)
+            else:
+                processedHog = processedFrame
+            self.changePixmap.emit(processedFrame, processedHog)
+            #self.changePixmap.emit(processedFrame)
 
 
 
@@ -81,18 +86,18 @@ class App(QWidget):
         self.initUI()
         self.title = "Test"
 
-    """@pyqtSlot(QImage, QImage)
+    @pyqtSlot(QImage, QImage)
     def setImage(self, image, hog):
         self.label.setPixmap(QPixmap.fromImage(image))
         self.labelHog.setPixmap(QPixmap.fromImage(hog))
-        #chequear cantidad
+        """#chequear cantidad
             self.labelDetections.setPixmap(QPixmap.fromImage(detections[0]))
             self.labelDetections2.setPixmap(QPixmap.fromImage(detections[1]))"""
             
     
-    @pyqtSlot(QImage)
+    """@pyqtSlot(QImage)
     def setImage(self, image):
-        self.label.setPixmap(QPixmap.fromImage(image))
+        self.label.setPixmap(QPixmap.fromImage(image))"""
 
     # @pyqtSlot(QImage)
     # def setImage2(self, image):
@@ -243,7 +248,7 @@ class fps():
 def getViewHogs(image):
     """Genera el HOG de todas las imagenes que se encuentran
     dentro de la carpeta pasada por parametro"""
-    image = skimage.transform.resize(image, (image.shape[0] / 10, image.shape[1] / 10))
+    image = skimage.transform.resize(image, (image.shape[0] / settings.resizeHogs, image.shape[1] / settings.resizeHogs))
     img_hog, visual = hog(image,block_norm='L2-Hys',transform_sqrt=True,visualise=True)
     return visual
 

@@ -38,6 +38,8 @@ def main():
     parcial = end - start
     print(parcial)
     
+    
+    
     fig,(ax_ori, ax_image)=plt.subplots(1,2,dpi=500)
     ax_ori.imshow(image)
     ax_image.imshow(visual)
