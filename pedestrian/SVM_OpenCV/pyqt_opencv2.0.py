@@ -14,13 +14,12 @@ import numpy as np
 from datetime import datetime as dt
 import skimage.transform
 from skimage.feature import hog
+from skimage import exposure
+from matplotlib import pyplot as plt
 
 
 class Thread(QThread):
-    changePixmap = pyqtSignal(QImage,QImage) 
-    #hangePixmap = pyqtSignal(QImage) 
-    # changePixmap2 = pyqtSignal(QImage)
-    # changePixmap3 = pyqtSignal(QImage)
+    changePixmap = pyqtSignal(QImage,QImage)
 
     def run(self):
         winSize = (64, 128)
@@ -41,7 +40,7 @@ class Thread(QThread):
         hog.setSVMDetector(cv2.HOGDescriptor_getDefaultPeopleDetector())
 
         # Inicializacion de captura de video desde camara web o archivo de video
-        cap = cv2.VideoCapture(0)
+        cap = cv2.VideoCapture("video.mp4")
         cap.set(cv2.CAP_PROP_FRAME_WIDTH,RES_WIDTH)
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT,RES_HEIGHT)
 
@@ -70,8 +69,9 @@ class Thread(QThread):
             if (visual.any()):
                 newHog = visual
                         
-            if newHog is not None:                
-                convertToQtFormat = QImage(newHog.data, newHog.shape[1], newHog.shape[0], QImage.Format_RGB888)
+            if newHog is not None:   
+                print(newHog)
+                convertToQtFormat = QImage(newHog.data, newHog.shape[1], newHog.shape[0], QImage.Format_ARGB32)
                 processedHog = convertToQtFormat.scaled(RES_WIDTH, RES_HEIGHT, Qt.KeepAspectRatio)
             else:
                 processedHog = processedFrame
@@ -93,26 +93,12 @@ class App(QWidget):
         """#chequear cantidad
             self.labelDetections.setPixmap(QPixmap.fromImage(detections[0]))
             self.labelDetections2.setPixmap(QPixmap.fromImage(detections[1]))"""
-            
-    
-    """@pyqtSlot(QImage)
-    def setImage(self, image):
-        self.label.setPixmap(QPixmap.fromImage(image))"""
-
-    # @pyqtSlot(QImage)
-    # def setImage2(self, image):
-    #     self.label2.setPixmap(QPixmap.fromImage(image))
-    
-    # @pyqtSlot(QImage)
-    # def setImage3(self, image):
-    #     self.label3.setPixmap(QPixmap.fromImage(image))
 
     def initUI(self):
         self.setWindowTitle("Test")
-        #self.setGeometry(0, 0, RES_WIDTH, RES_HEIGHT)
-        #self.setGeometry(0, 0, 1920, 1080)
+        
         self.showFullScreen()
-        # self.resize(1800, 1200)
+        
         # create a label
         hbox = QHBoxLayout(self)
         self.label = QLabel(self)
@@ -128,8 +114,6 @@ class App(QWidget):
 
         th = Thread(self)
         th.changePixmap.connect(self.setImage)
-        # th.changePixmap2.connect(self.setImage2)
-        # th.changePixmap3.connect(self.setImage3)
         th.start()
 
     def changeValue(self):
@@ -248,8 +232,14 @@ class fps():
 def getViewHogs(image):
     """Genera el HOG de todas las imagenes que se encuentran
     dentro de la carpeta pasada por parametro"""
+    image = image[...,::-1]
     image = skimage.transform.resize(image, (image.shape[0] / settings.resizeHogs, image.shape[1] / settings.resizeHogs))
     img_hog, visual = hog(image,block_norm='L2-Hys',transform_sqrt=True,visualise=True)
+    #visual = exposure.rescale_intensity(visual, in_range=(0, 10))
+    norm = plt.Normalize(vmin=visual.min(), vmax=visual.max())
+    visual = plt.cm.jet(norm(visual))
+    visual = 255*visual
+    visual = visual.astype(np.uint8)
     return visual
 
 

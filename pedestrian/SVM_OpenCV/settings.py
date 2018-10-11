@@ -11,7 +11,7 @@ resize = 0.35
 boundBoxSize = 0.7
 
 #Settings hogs
-resizeHogs = 10 #cuantas veces achicarlo
+resizeHogs = 4 #cuantas veces achicarlo
 
 #Settings de la SVM
 #less= better detection, more cpu time
@@ -21,7 +21,7 @@ padding = 8
 winStride = 4
 
 # skip 1 frame for every 'skip' frames processed
-skip=4
+skip=2
 assert(skip>1)
 
 # max number of boxes to detect
