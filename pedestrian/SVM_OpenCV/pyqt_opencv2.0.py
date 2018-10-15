@@ -16,6 +16,7 @@ import skimage.transform
 from skimage.feature import hog
 from skimage import exposure
 from matplotlib import pyplot as plt
+from qimage2ndarray import array2qimage
 
 
 class Thread(QThread):
@@ -40,7 +41,8 @@ class Thread(QThread):
         hog.setSVMDetector(cv2.HOGDescriptor_getDefaultPeopleDetector())
 
         # Inicializacion de captura de video desde camara web o archivo de video
-        cap = cv2.VideoCapture("video3.mp4")
+        # cap = cv2.VideoCapture("video3.mp4")
+        cap = cv2.VideoCapture(0)
         cap.set(cv2.CAP_PROP_FRAME_WIDTH,RES_WIDTH)
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT,RES_HEIGHT)
 
@@ -90,9 +92,9 @@ class App(QWidget):
         self.label.setPixmap(QPixmap.fromImage(image))
         self.labelHog.setPixmap(QPixmap.fromImage(hog))
         if len(detections)>0:
-            self.labelDetections.setPixmap(QPixmap.fromImage(detections[0]))
+            self.labelDetections.setPixmap(QPixmap.fromImage(array2qimage(detections[0])))
             if len(detections)>1:
-                self.labelDetections2.setPixmap(QPixmap.fromImage(detections[1]))
+                self.labelDetections2.setPixmap(QPixmap.fromImage(array2qimage(detections[1])))
 
     def initUI(self):
         self.setWindowTitle("Test")
@@ -182,12 +184,11 @@ def getImage(f, i, hog, oldRect, cap, lastID):
             #cv2.rectangle(frame, (int(x // settings.resize), int(y // settings.resize)), (int((x + w) // settings.resize), int((y + h) // settings.resize)), (0, 255, 0), 2)
             cv2.rectangle(frame, (x, y), (x + w, y + h), settings.colors[id%8], 2)
             
-        #Supuestamente recorta los hogs de las primeras 2 detecciones
-        """if len(oldRect)>0:
+        # Recorta los hogs de las primeras 2 detecciones
+        if visual.any() and len(oldRect) > 0:
             hog_detection.append(visual[int(oldRect[0][1]//settings.resizeHogs):int((oldRect[0][1]+oldRect[0][3])//settings.resizeHogs), int(oldRect[0][0]//settings.resizeHogs):int((oldRect[0][0]+oldRect[0][2])//settings.resizeHogs)])
-            if len(oldRect)>1:
+            if len(oldRect) > 1:
                 hog_detection.append(visual[int(oldRect[1][1]//settings.resizeHogs):int((oldRect[1][1]+oldRect[1][3])//settings.resizeHogs), int(oldRect[1][0]//settings.resizeHogs):int((oldRect[1][0]+oldRect[1][2])//settings.resizeHogs)])
-        """
         
         frame = cv2.flip(frame, 1)
         cv2.putText(frame, str(round(FPS, 2)), (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
