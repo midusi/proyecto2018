@@ -19,7 +19,7 @@ from matplotlib import pyplot as plt
 
 
 class Thread(QThread):
-    changePixmap = pyqtSignal(QImage,QImage)
+    changePixmap = pyqtSignal(QImage,QImage, object)
 
     def run(self):
         winSize = (64, 128)
@@ -40,7 +40,7 @@ class Thread(QThread):
         hog.setSVMDetector(cv2.HOGDescriptor_getDefaultPeopleDetector())
 
         # Inicializacion de captura de video desde camara web o archivo de video
-        cap = cv2.VideoCapture("video.mp4")
+        cap = cv2.VideoCapture("video3.mp4")
         cap.set(cv2.CAP_PROP_FRAME_WIDTH,RES_WIDTH)
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT,RES_HEIGHT)
 
@@ -49,6 +49,7 @@ class Thread(QThread):
         oldRect = []
         
         newHog = None
+        detectionsHogs = []
         
 
         f = fps()
@@ -59,24 +60,22 @@ class Thread(QThread):
 
         while True:
             """Consigue la captura"""
-            frame, oldRect, visual = getImage(f, i, hog, oldRect, cap, lastID)
+            frame, oldRect, lastID, visual, detectionsHogs = getImage(f, i, hog, oldRect, cap, lastID)
             i+=1
             
             rgbImage = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             convertToQtFormat = QImage(rgbImage.data, rgbImage.shape[1], rgbImage.shape[0], QImage.Format_RGB888)
-            processedFrame = convertToQtFormat.scaled(RES_WIDTH, RES_HEIGHT, Qt.KeepAspectRatio)
+            processedFrame = convertToQtFormat.scaled(RES_WIDTH/2, RES_HEIGHT/2, Qt.KeepAspectRatio)
             
             if (visual.any()):
                 newHog = visual
                         
             if newHog is not None:   
-                print(newHog)
-                convertToQtFormat = QImage(newHog.data, newHog.shape[1], newHog.shape[0], QImage.Format_ARGB32)
-                processedHog = convertToQtFormat.scaled(RES_WIDTH, RES_HEIGHT, Qt.KeepAspectRatio)
+                convertToQtFormat = QImage(newHog.data, newHog.shape[1], newHog.shape[0], QImage.Format_RGBA8888)
+                processedHog = convertToQtFormat.scaled(RES_WIDTH/2, RES_HEIGHT/2, Qt.KeepAspectRatio)
             else:
                 processedHog = processedFrame
-            self.changePixmap.emit(processedFrame, processedHog)
-            #self.changePixmap.emit(processedFrame)
+            self.changePixmap.emit(processedFrame, processedHog, detectionsHogs)
 
 
 
@@ -86,13 +85,14 @@ class App(QWidget):
         self.initUI()
         self.title = "Test"
 
-    @pyqtSlot(QImage, QImage)
-    def setImage(self, image, hog):
+    @pyqtSlot(QImage, QImage, object)
+    def setImage(self, image, hog, detections):
         self.label.setPixmap(QPixmap.fromImage(image))
         self.labelHog.setPixmap(QPixmap.fromImage(hog))
-        """#chequear cantidad
+        if len(detections)>0:
             self.labelDetections.setPixmap(QPixmap.fromImage(detections[0]))
-            self.labelDetections2.setPixmap(QPixmap.fromImage(detections[1]))"""
+            if len(detections)>1:
+                self.labelDetections2.setPixmap(QPixmap.fromImage(detections[1]))
 
     def initUI(self):
         self.setWindowTitle("Test")
@@ -108,9 +108,19 @@ class App(QWidget):
         self.labelHog = QLabel(self)
         self.labelHog.move(RES_WIDTH-400, 0)
         self.labelHog.resize(400, RES_HEIGHT/2)    
+        
+        self.labelDetections = QLabel(self)
+        self.labelDetections.move(0, 400)
+        self.labelDetections.resize(400, RES_HEIGHT/2)   
+        
+        self.labelDetections2 = QLabel(self)
+        self.labelDetections2.move(RES_WIDTH-400, 800)
+        self.labelDetections2.resize(400, RES_HEIGHT/2)   
 
         hbox.addWidget(self.label)
         hbox.addWidget(self.labelHog)
+        hbox.addWidget(self.labelDetections)
+        hbox.addWidget(self.labelDetections2)
 
         th = Thread(self)
         th.changePixmap.connect(self.setImage)
@@ -148,6 +158,7 @@ def getImage(f, i, hog, oldRect, cap, lastID):
     timeFrame = dt.now()
     ret, frame = cap.read()
     visual = np.array([])
+    hog_detection = []
     if ret:
         # Saltea 1 frame
         if i % settings.skip >0:
@@ -163,17 +174,24 @@ def getImage(f, i, hog, oldRect, cap, lastID):
             
             visual = getViewHogs(imageGray)
 
-            oldRect = survivingBBoxes_ms(oldRect, newRect, settings.trackThreshold, timeFrame, lastID)
+            oldRect, lastID = survivingBBoxes_ms(oldRect, newRect, settings.trackThreshold, timeFrame, lastID)
                 
         FPS = f()
         # Dibuja los rectangulos en pantalla de lo que detectó
         for (x, y, w, h, s, id) in oldRect:
             #cv2.rectangle(frame, (int(x // settings.resize), int(y // settings.resize)), (int((x + w) // settings.resize), int((y + h) // settings.resize)), (0, 255, 0), 2)
-            cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            cv2.rectangle(frame, (x, y), (x + w, y + h), settings.colors[id%8], 2)
+            
+        #Supuestamente recorta los hogs de las primeras 2 detecciones
+        """if len(oldRect)>0:
+            hog_detection.append(visual[int(oldRect[0][1]//settings.resizeHogs):int((oldRect[0][1]+oldRect[0][3])//settings.resizeHogs), int(oldRect[0][0]//settings.resizeHogs):int((oldRect[0][0]+oldRect[0][2])//settings.resizeHogs)])
+            if len(oldRect)>1:
+                hog_detection.append(visual[int(oldRect[1][1]//settings.resizeHogs):int((oldRect[1][1]+oldRect[1][3])//settings.resizeHogs), int(oldRect[1][0]//settings.resizeHogs):int((oldRect[1][0]+oldRect[1][2])//settings.resizeHogs)])
+        """
         
         frame = cv2.flip(frame, 1)
         cv2.putText(frame, str(round(FPS, 2)), (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
-    return frame, oldRect, visual
+    return frame, oldRect, lastID, visual, hog_detection
 
 
 def survivingBBoxes_ms(oldRect, newRect, threshold, frameTime, lastID):
@@ -200,13 +218,13 @@ def survivingBBoxes_ms(oldRect, newRect, threshold, frameTime, lastID):
         #sorted_indices=np.argsort(sizes)
         last_index=min(settings.max_bounding_boxes,len(bboxes))
         bboxes=bboxes[0:last_index]
-        return bboxes
+        return bboxes, lastID
         #return bboxes
 
     for item in oldRect:
         item[4] -= 3000
     oldRect = list(filter(lambda rect: rect[4] > 0, oldRect))
-    return oldRect
+    return oldRect, lastID
 
 
 class fps():
@@ -231,15 +249,15 @@ class fps():
     
 def getViewHogs(image):
     """Genera el HOG de todas las imagenes que se encuentran
-    dentro de la carpeta pasada por parametro"""
+    dentro de la carpeta pasada por parametro"""    
     image = image[...,::-1]
     image = skimage.transform.resize(image, (image.shape[0] / settings.resizeHogs, image.shape[1] / settings.resizeHogs))
     img_hog, visual = hog(image,block_norm='L2-Hys',transform_sqrt=True,visualise=True)
-    #visual = exposure.rescale_intensity(visual, in_range=(0, 10))
+    visual = exposure.rescale_intensity(visual)    
     norm = plt.Normalize(vmin=visual.min(), vmax=visual.max())
     visual = plt.cm.jet(norm(visual))
     visual = 255*visual
-    visual = visual.astype(np.uint8)
+    visual = visual.astype(np.uint8)    
     return visual
 
 

@@ -27,3 +27,12 @@ assert(skip>1)
 # max number of boxes to detect
 max_bounding_boxes=5 # set to -1 to use all bounding boxes
 
+colors = [(0,0,255),
+          (0,255,0),
+          (255,0,0),
+          (50,130,255),
+          (255,255,0),
+          (255,0,255),
+          (0,255,255),
+          (255,255,255)]
+
