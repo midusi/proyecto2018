@@ -233,7 +233,7 @@ def getImage(f, i, hog, oldRect, cap, lastID):
             # Calcula el Hog y hace la deteccion con SVM devolviendo los bounding boxes de los match
             newRect = HogDescriptor(image, hog)
             
-            visual = getViewHogs(imageGray)
+            visual = getViewHogs(imageGray,settings.resizeHogs)
 
             oldRect, lastID = survivingBBoxes_ms(oldRect, newRect, settings.trackThreshold, timeFrame, lastID)
                 
@@ -245,9 +245,11 @@ def getImage(f, i, hog, oldRect, cap, lastID):
             
         # Recorta los hogs de las primeras 2 detecciones
         if visual.any() and len(oldRect) > 0:
-            hog_detection.append(visual[int(oldRect[0][1]//settings.resizeHogs):int((oldRect[0][1]+oldRect[0][3])//settings.resizeHogs), int(oldRect[0][0]//settings.resizeHogs):int((oldRect[0][0]+oldRect[0][2])//settings.resizeHogs)])
+            #hog_detection.append(visual[int(oldRect[0][1]//settings.resizeHogs):int((oldRect[0][1]+oldRect[0][3])//settings.resizeHogs), int(oldRect[0][0]//settings.resizeHogs):int((oldRect[0][0]+oldRect[0][2])//settings.resizeHogs)])
+            hog_detection.append(getViewHogs(image[int(oldRect[0][1]):int((oldRect[0][1]+oldRect[0][3])), int(oldRect[0][0]):int((oldRect[0][0]+oldRect[0][2]))],1))
             if len(oldRect) > 1:
-                hog_detection.append(visual[int(oldRect[1][1]//settings.resizeHogs):int((oldRect[1][1]+oldRect[1][3])//settings.resizeHogs), int(oldRect[1][0]//settings.resizeHogs):int((oldRect[1][0]+oldRect[1][2])//settings.resizeHogs)])
+                hog_detection.append(getViewHogs(image[int(oldRect[1][1]):int((oldRect[1][1]+oldRect[1][3])), int(oldRect[1][0]):int((oldRect[1][0]+oldRect[1][2]))],1))
+                #hog_detection.append(visual[int(oldRect[1][1]//settings.resizeHogs):int((oldRect[1][1]+oldRect[1][3])//settings.resizeHogs), int(oldRect[1][0]//settings.resizeHogs):int((oldRect[1][0]+oldRect[1][2])//settings.resizeHogs)])
         
         frame = cv2.flip(frame, 1)
         cv2.putText(frame, str(round(FPS, 2)), (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
@@ -307,11 +309,12 @@ class fps():
         return self.FPS
     
     
-def getViewHogs(image):
+def getViewHogs(image,size):
     """Genera el HOG de todas las imagenes que se encuentran
     dentro de la carpeta pasada por parametro"""    
     #image = image[...,::-1]
-    image = skimage.transform.resize(image, (image.shape[0] / settings.resizeHogs, image.shape[1] / settings.resizeHogs))
+    if size != 1:
+        image = skimage.transform.resize(image, (image.shape[0] / size, image.shape[1] / size))
     img_hog, visual = hog(image,block_norm='L2-Hys',transform_sqrt=True,visualise=True)
     visual = exposure.rescale_intensity(visual)    
     norm = plt.Normalize(vmin=visual.min(), vmax=visual.max())
