@@ -1,12 +1,12 @@
 #IS_GAME_ACTIVE = False
-RES_WIDTH = 800
-RES_HEIGHT = 600
+RES_WIDTH = 1920
+RES_HEIGHT = 1080
 
 
 import cv2
-from PyQt5.QtCore import (QThread, Qt, pyqtSignal, pyqtSlot)
-from PyQt5.QtGui import (QPixmap, QImage)
-from PyQt5.QtWidgets import QWidget, QLabel, QApplication, QHBoxLayout
+from PyQt5.QtCore import (QThread, Qt, pyqtSignal, pyqtSlot, QTimer)
+from PyQt5.QtGui import (QPixmap, QImage, QFont)
+from PyQt5.QtWidgets import QWidget, QLabel, QApplication, QHBoxLayout,  QGridLayout
 import sys
 import time
 import settings
@@ -42,7 +42,7 @@ class Thread(QThread):
 
         # Inicializacion de captura de video desde camara web o archivo de video
         # cap = cv2.VideoCapture("video3.mp4")
-        cap = cv2.VideoCapture(0)
+        cap = cv2.VideoCapture("video3.mp4")
         cap.set(cv2.CAP_PROP_FRAME_WIDTH,RES_WIDTH)
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT,RES_HEIGHT)
 
@@ -67,14 +67,14 @@ class Thread(QThread):
             
             rgbImage = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             convertToQtFormat = QImage(rgbImage.data, rgbImage.shape[1], rgbImage.shape[0], QImage.Format_RGB888)
-            processedFrame = convertToQtFormat.scaled(RES_WIDTH/2, RES_HEIGHT/2, Qt.KeepAspectRatio)
+            processedFrame = convertToQtFormat.scaled(RES_WIDTH-652, RES_HEIGHT, Qt.KeepAspectRatio)
             
             if (visual.any()):
                 newHog = visual
                         
             if newHog is not None:   
                 convertToQtFormat = QImage(newHog.data, newHog.shape[1], newHog.shape[0], QImage.Format_RGBA8888)
-                processedHog = convertToQtFormat.scaled(RES_WIDTH/2, RES_HEIGHT/2, Qt.KeepAspectRatio)
+                processedHog = convertToQtFormat.scaled(652, RES_HEIGHT/2, Qt.KeepAspectRatio)
             else:
                 processedHog = processedFrame
             self.changePixmap.emit(processedFrame, processedHog, detectionsHogs)
@@ -90,39 +90,84 @@ class App(QWidget):
     @pyqtSlot(QImage, QImage, object)
     def setImage(self, image, hog, detections):
         self.label.setPixmap(QPixmap.fromImage(image))
-        self.labelHog.setPixmap(QPixmap.fromImage(hog))
+        self.labelHog.setPixmap(QPixmap.fromImage(hog.mirrored(vertical=False, horizontal=True)))
         if len(detections)>0:
-            self.labelDetections.setPixmap(QPixmap.fromImage(array2qimage(detections[0])))
-            if len(detections)>1:
-                self.labelDetections2.setPixmap(QPixmap.fromImage(array2qimage(detections[1])))
+            detection_0 = array2qimage(detections[0])
+            detection_0 = detection_0.mirrored(vertical=False, horizontal=True)
+            detection_0 = detection_0.scaled(RES_WIDTH/2, RES_HEIGHT/2, Qt.KeepAspectRatio)
+            detection_0 = QPixmap.fromImage(detection_0)
+            self.labelDetection.setPixmap(detection_0)
+            self.resetTime(1)
+            if len(detections)>1:                
+                detection_1 = array2qimage(detections[1])
+                detection_1 = detection_1.mirrored(vertical=False, horizontal=True)
+                detection_1 = detection_1.scaled(RES_WIDTH/2, RES_HEIGHT/2, Qt.KeepAspectRatio)
+                detection_1 = QPixmap.fromImage(detection_1)
+                self.labelDetection2.setPixmap(detection_1)
+                self.resetTime(2)
+            
 
     def initUI(self):
         self.setWindowTitle("Test")
         
         self.showFullScreen()
         
+        self.setStyleSheet("background-color: black;")
+        
         # create a label
-        hbox = QHBoxLayout(self)
         self.label = QLabel(self)
+        self.label.resize(RES_WIDTH-652, RES_HEIGHT)
         self.label.move(0, 0)
-        self.label.resize(RES_WIDTH-400, RES_HEIGHT)
         
         self.labelHog = QLabel(self)
-        self.labelHog.move(RES_WIDTH-400, 0)
-        self.labelHog.resize(400, RES_HEIGHT/2)    
+        self.labelHog.move(RES_WIDTH-652, 0)
+        self.labelHog.resize(652, RES_HEIGHT/2)    
         
-        self.labelDetections = QLabel(self)
-        self.labelDetections.move(0, 400)
-        self.labelDetections.resize(400, RES_HEIGHT/2)   
+        self.labelDetection = QLabel(self)
+        self.labelDetection.move(RES_WIDTH-600, RES_HEIGHT/2)
+        self.labelDetection.resize(326, RES_HEIGHT/2)   
         
-        self.labelDetections2 = QLabel(self)
-        self.labelDetections2.move(RES_WIDTH-400, 800)
-        self.labelDetections2.resize(400, RES_HEIGHT/2)   
-
-        hbox.addWidget(self.label)
-        hbox.addWidget(self.labelHog)
-        hbox.addWidget(self.labelDetections)
-        hbox.addWidget(self.labelDetections2)
+        self.labelDetection2 = QLabel(self)
+        self.labelDetection2.move(RES_WIDTH-300, RES_HEIGHT/2)
+        self.labelDetection2.resize(326, RES_HEIGHT/2)   
+        
+        newfont = QFont("Times", 36, QFont.Bold)
+        
+        self.labelText = QLabel(self)
+        self.labelText.setText("Vista Principal")
+        self.labelText.setStyleSheet('color: yellow')
+        self.labelText.setFont(newfont)
+        self.labelText.move(450,80)
+        
+        self.labelHogText = QLabel(self)
+        self.labelHogText.setText("Vista Hogs")
+        self.labelHogText.setStyleSheet('color: yellow')
+        self.labelHogText.setFont(newfont)
+        self.labelHogText.move(RES_WIDTH-450,10)
+        
+        self.labelDetectionsText = QLabel(self)
+        self.labelDetectionsText.setText("Detecciones 1º y 2º")
+        self.labelDetectionsText.setStyleSheet('color: yellow')
+        self.labelDetectionsText.setFont(newfont)
+        self.labelDetectionsText.move(RES_WIDTH-550,(RES_HEIGHT/2)-75)
+        
+        
+        self.label.show()
+        self.labelHog.show()
+        self.labelDetection.show()
+        self.labelDetection2.show()
+        self.labelText.show()
+        self.labelHogText.show()
+        self.labelDetectionsText.show()
+        
+        
+        self.time_to_wait = 2
+        self.time_to_wait2 = 2       
+        
+        self.timer = QTimer(self)
+        self.timer.setInterval(1000)
+        self.timer.timeout.connect(self.detectionLife)
+        self.timer.start()
 
         th = Thread(self)
         th.changePixmap.connect(self.setImage)
@@ -131,6 +176,20 @@ class App(QWidget):
     def changeValue(self):
         val = float(self.slider.value)
         settings.resize = val / 100.0
+    
+    def detectionLife(self):
+        self.time_to_wait -= 1
+        self.time_to_wait2 -= 1
+        if self.time_to_wait <= 0:
+            self.labelDetection.clear()        
+        if self.time_to_wait2 <= 0:
+            self.labelDetection2.clear()
+    
+    def resetTime(self,id):
+        if id == 1:
+            self.time_to_wait = 2
+        if id == 2:
+            self.time_to_wait2 = 2
 
 
 def HogDescriptor(image, hog):
@@ -251,7 +310,7 @@ class fps():
 def getViewHogs(image):
     """Genera el HOG de todas las imagenes que se encuentran
     dentro de la carpeta pasada por parametro"""    
-    image = image[...,::-1]
+    #image = image[...,::-1]
     image = skimage.transform.resize(image, (image.shape[0] / settings.resizeHogs, image.shape[1] / settings.resizeHogs))
     img_hog, visual = hog(image,block_norm='L2-Hys',transform_sqrt=True,visualise=True)
     visual = exposure.rescale_intensity(visual)    
