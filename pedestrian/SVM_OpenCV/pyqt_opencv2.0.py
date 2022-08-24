@@ -74,7 +74,7 @@ class Thread(QThread):
                         
             if newHog is not None:   
                 convertToQtFormat = QImage(newHog.data, newHog.shape[1], newHog.shape[0], QImage.Format_RGBA8888)
-                processedHog = convertToQtFormat.scaled(652, RES_HEIGHT/2, Qt.KeepAspectRatio)
+                processedHog = convertToQtFormat.scaled(652, int(RES_HEIGHT/2), Qt.KeepAspectRatio)
             else:
                 processedHog = processedFrame
             self.changePixmap.emit(processedFrame, processedHog, detectionsHogs)
@@ -94,14 +94,14 @@ class App(QWidget):
         if len(detections)>0:
             detection_0 = array2qimage(detections[0])
             detection_0 = detection_0.mirrored(vertical=False, horizontal=True)
-            detection_0 = detection_0.scaled(RES_WIDTH/2, RES_HEIGHT/2, Qt.KeepAspectRatio)
+            detection_0 = detection_0.scaled(int(RES_WIDTH/2), int(RES_HEIGHT/2), Qt.KeepAspectRatio)
             detection_0 = QPixmap.fromImage(detection_0)
             self.labelDetection.setPixmap(detection_0)
             self.resetTime(1)
             if len(detections)>1:                
                 detection_1 = array2qimage(detections[1])
                 detection_1 = detection_1.mirrored(vertical=False, horizontal=True)
-                detection_1 = detection_1.scaled(RES_WIDTH/2, RES_HEIGHT/2, Qt.KeepAspectRatio)
+                detection_1 = detection_1.scaled(int(RES_WIDTH/2), int(RES_HEIGHT/2), Qt.KeepAspectRatio)
                 detection_1 = QPixmap.fromImage(detection_1)
                 self.labelDetection2.setPixmap(detection_1)
                 self.resetTime(2)
@@ -121,15 +121,15 @@ class App(QWidget):
         
         self.labelHog = QLabel(self)
         self.labelHog.move(RES_WIDTH-652, 0)
-        self.labelHog.resize(652, RES_HEIGHT/2)    
+        self.labelHog.resize(652, int(RES_HEIGHT/2))    
         
         self.labelDetection = QLabel(self)
-        self.labelDetection.move(RES_WIDTH-600, RES_HEIGHT/2)
-        self.labelDetection.resize(326, RES_HEIGHT/2)   
+        self.labelDetection.move(RES_WIDTH-600, int(RES_HEIGHT/2))
+        self.labelDetection.resize(326, int(RES_HEIGHT/2))   
         
         self.labelDetection2 = QLabel(self)
-        self.labelDetection2.move(RES_WIDTH-300, RES_HEIGHT/2)
-        self.labelDetection2.resize(326, RES_HEIGHT/2)   
+        self.labelDetection2.move(RES_WIDTH-300, int(RES_HEIGHT/2))
+        self.labelDetection2.resize(326, int(RES_HEIGHT/2))   
         
         newfont = QFont("Times", 36, QFont.Bold)
         
@@ -149,7 +149,7 @@ class App(QWidget):
         self.labelDetectionsText.setText("Detecciones 1º y 2º")
         self.labelDetectionsText.setStyleSheet('color: yellow')
         self.labelDetectionsText.setFont(newfont)
-        self.labelDetectionsText.move(RES_WIDTH-550,(RES_HEIGHT/2)-75)
+        self.labelDetectionsText.move(RES_WIDTH-550,int(RES_HEIGHT/2)-75)
         
         
         self.label.show()
@@ -312,7 +312,7 @@ def getViewHogs(image):
     dentro de la carpeta pasada por parametro"""    
     #image = image[...,::-1]
     image = skimage.transform.resize(image, (image.shape[0] / settings.resizeHogs, image.shape[1] / settings.resizeHogs))
-    img_hog, visual = hog(image,block_norm='L2-Hys',transform_sqrt=True,visualise=True)
+    img_hog, visual = hog(image,block_norm='L2-Hys',transform_sqrt=True,visualize=True)
     visual = exposure.rescale_intensity(visual)    
     norm = plt.Normalize(vmin=visual.min(), vmax=visual.max())
     visual = plt.cm.jet(norm(visual))
